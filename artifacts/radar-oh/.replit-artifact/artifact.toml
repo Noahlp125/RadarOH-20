@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "RadarOH"
+description = "Herramienta interna de inteligencia competitiva y monitorización digital para OH Casas, con seguimiento de fuentes, competidores, keywords y plan de acciones."
+version = "1.0.0"
+id = "artifacts/radar-oh"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19205
+
+[services.development]
+run = "pnpm --filter @workspace/radar-oh run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/radar-oh", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/radar-oh/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19205"
+BASE_PATH = "/"
