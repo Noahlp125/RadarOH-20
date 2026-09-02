@@ -9,7 +9,7 @@ import router from "./routes";
 import healthRouter from "./routes/health";
 import { logger } from "./lib/logger";
 import { recordRadarActivity } from "./lib/radar/dashboard";
-import { recordHttpRequest } from "./lib/observability";
+import { isReady, recordHttpRequest } from "./lib/observability";
 import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,
@@ -66,6 +66,16 @@ app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(helmet());
 // Operational endpoints must remain available without Clerk/Radar authorization.
 app.use("/api", healthRouter);
+app.use("/api/radar", (req, res, next) => {
+  if (!isReady()) {
+    res.status(503).json({
+      error: "Servicio temporalmente no disponible",
+      request_id: (req as typeof req & { id?: string }).id,
+    });
+    return;
+  }
+  next();
+});
 app.use(
   "/api",
   rateLimit({

@@ -20,9 +20,6 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-await initializeRadarDatabaseSecurity();
-setReadiness(true);
-
 const server = app.listen(port, (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");
@@ -30,7 +27,6 @@ const server = app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
-  startRadarWorker();
 });
 
 const shutdown = createShutdownHandler({
@@ -49,3 +45,12 @@ const shutdown = createShutdownHandler({
 
 process.once("SIGTERM", () => void shutdown("SIGTERM"));
 process.once("SIGINT", () => void shutdown("SIGINT"));
+
+try {
+  await initializeRadarDatabaseSecurity();
+  setReadiness(true);
+  startRadarWorker();
+} catch (error) {
+  logger.error({ err: error }, "RadarOH startup initialization failed");
+  await shutdown("STARTUP_FAILURE");
+}

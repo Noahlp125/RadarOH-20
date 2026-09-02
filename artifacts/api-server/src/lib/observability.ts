@@ -31,6 +31,7 @@ function metricLines(name: string, map: Map<string, number>) {
 
 export function safeRoute(path: string) {
   const pathname = path.split("?")[0] ?? "";
+  if (pathname === "/api") return "/api";
   if (pathname === "/healthz" || pathname === "/readyz" || pathname === "/metrics") {
     return `/api${pathname}`;
   }
@@ -73,6 +74,7 @@ export function recordLeaseAcquisition() { leaseAcquisitions += 1; }
 export function recordLeaseLoss() { leaseLosses += 1; }
 export function recordRecoveredJobs(count: number) { jobsRecovered += Math.max(0, count); }
 export function setReadiness(value: boolean) { ready = value; }
+export function isReady() { return ready; }
 export function setWorkerLeader(value: boolean) { workerLeader = value ? 1 : 0; }
 export function setActiveJobs(value: number) { activeJobs = Math.max(0, value); }
 
