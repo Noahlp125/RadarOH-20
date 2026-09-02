@@ -24,6 +24,7 @@ import type {
   GetRadarExecutiveDashboardParams,
   GetRadarIntelligenceParams,
   GetRadarMonitorHistoryParams,
+  GetRadarPredictiveParams,
   HealthStatus,
   NotFoundResponse,
   RadarAiAlert,
@@ -34,6 +35,8 @@ import type {
   RadarAiStatus,
   RadarAlertPreferences,
   RadarAlertPreferencesUpdate,
+  RadarAssistantRequest,
+  RadarAssistantResponse,
   RadarChangeEvent,
   RadarCompetitor,
   RadarCompetitorInput,
@@ -53,6 +56,7 @@ import type {
   RadarMonitorRunRequest,
   RadarMonitorRunResult,
   RadarMonitorStatus,
+  RadarPredictive,
   RadarSearchResponse,
   RadarSource,
   RadarSourceInput,
@@ -1805,6 +1809,161 @@ export function useGetRadarIntelligence<TData = Awaited<ReturnType<typeof getRad
 
 
 
+
+export const getGetRadarPredictiveUrl = (params?: GetRadarPredictiveParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/radar/predictive?${stringifiedParams}` : `/api/radar/predictive`
+}
+
+/**
+ * @summary Read deterministic, evidence-grounded prospective signals
+ */
+export const getRadarPredictive = async (params?: GetRadarPredictiveParams, options?: Parameters<typeof customFetch>[1]): Promise<RadarPredictive> => {
+
+  return customFetch<RadarPredictive>(getGetRadarPredictiveUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRadarPredictiveQueryKey = (params?: GetRadarPredictiveParams,) => {
+    return [
+    `/api/radar/predictive`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRadarPredictiveQueryOptions = <TData = Awaited<ReturnType<typeof getRadarPredictive>>, TError = ErrorType<ValidationErrorResponse>>(params?: GetRadarPredictiveParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarPredictive>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRadarPredictiveQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRadarPredictive>>> = ({ signal }) => getRadarPredictive(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRadarPredictive>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRadarPredictiveQueryResult = NonNullable<Awaited<ReturnType<typeof getRadarPredictive>>>
+export type GetRadarPredictiveQueryError = ErrorType<ValidationErrorResponse>
+
+
+/**
+ * @summary Read deterministic, evidence-grounded prospective signals
+ */
+
+export function useGetRadarPredictive<TData = Awaited<ReturnType<typeof getRadarPredictive>>, TError = ErrorType<ValidationErrorResponse>>(
+ params?: GetRadarPredictiveParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarPredictive>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRadarPredictiveQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAskRadarAssistantUrl = () => {
+
+
+
+
+  return `/api/radar/assistant`
+}
+
+/**
+ * @summary Ask an evidence-grounded RadarOH assistant question
+ */
+export const askRadarAssistant = async (radarAssistantRequest: RadarAssistantRequest, options?: Parameters<typeof customFetch>[1]): Promise<RadarAssistantResponse> => {
+
+  return customFetch<RadarAssistantResponse>(getAskRadarAssistantUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(radarAssistantRequest)
+  }
+);}
+
+
+
+
+
+export const getAskRadarAssistantMutationOptions = <TError = ErrorType<ValidationErrorResponse | ServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askRadarAssistant>>, TError,{data: BodyType<RadarAssistantRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof askRadarAssistant>>, TError,{data: BodyType<RadarAssistantRequest>}, TContext> => {
+
+const mutationKey = ['askRadarAssistant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof askRadarAssistant>>, {data: BodyType<RadarAssistantRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  askRadarAssistant(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AskRadarAssistantMutationResult = NonNullable<Awaited<ReturnType<typeof askRadarAssistant>>>
+    export type AskRadarAssistantMutationBody = BodyType<RadarAssistantRequest>
+    export type AskRadarAssistantMutationError = ErrorType<ValidationErrorResponse | ServerErrorResponse>
+
+    /**
+ * @summary Ask an evidence-grounded RadarOH assistant question
+ */
+export const useAskRadarAssistant = <TError = ErrorType<ValidationErrorResponse | ServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askRadarAssistant>>, TError,{data: BodyType<RadarAssistantRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof askRadarAssistant>>,
+        TError,
+        {data: BodyType<RadarAssistantRequest>},
+        TContext
+      > => {
+      return useMutation(getAskRadarAssistantMutationOptions(options));
+    }
 
 export const getGetRadarIntegrationsOverviewUrl = () => {
 

@@ -43,7 +43,16 @@ import {
   type RadarWebhookRegistration,
   type RadarIntegrationDelivery,
   type RadarIntegration,
-  type RadarWebhookSubscription
+  type RadarWebhookSubscription,
+  getRadarPredictive,
+  askRadarAssistant,
+  type GetRadarPredictiveParams,
+  type RadarPredictive,
+  type RadarPredictiveSignal,
+  type RadarPredictiveScenariosItem,
+  type RadarPredictiveQuality,
+  type RadarAssistantRequest,
+  type RadarAssistantResponse
 } from "@workspace/api-client-react";
 
 export type RadarLocalState = Omit<RadarState, "workspaceId">;
@@ -166,4 +175,12 @@ export async function fetchRadarIntegrationDeliveries(): Promise<RadarIntegratio
 
 export async function retryDelivery(id: string): Promise<RadarIntegrationDelivery> {
   return retryRadarIntegrationDelivery(id);
+}
+
+export async function fetchRadarPredictive(params?: GetRadarPredictiveParams): Promise<RadarPredictive> {
+  return getRadarPredictive(params);
+}
+
+export async function submitRadarAssistantRequest(data: RadarAssistantRequest): Promise<RadarAssistantResponse> {
+  return askRadarAssistant(data);
 }

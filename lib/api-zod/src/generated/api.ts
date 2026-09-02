@@ -1195,6 +1195,139 @@ export const GetRadarIntelligenceResponse = zod.object({
 
 
 /**
+ * @summary Read deterministic, evidence-grounded prospective signals
+ */
+export const getRadarPredictiveQueryDaysDefault = 90;
+export const getRadarPredictiveQueryDaysMin = 30;
+export const getRadarPredictiveQueryDaysMax = 180;
+
+
+
+export const GetRadarPredictiveQueryParams = zod.object({
+  "days": zod.coerce.number().min(getRadarPredictiveQueryDaysMin).max(getRadarPredictiveQueryDaysMax).default(getRadarPredictiveQueryDaysDefault)
+})
+
+export const getRadarPredictiveResponsePeriodDaysMin = 30;
+export const getRadarPredictiveResponsePeriodDaysMax = 180;
+
+export const getRadarPredictiveResponseMarketTrendsItemConfidenceMin = 0;
+export const getRadarPredictiveResponseMarketTrendsItemConfidenceMax = 100;
+
+export const getRadarPredictiveResponseCompetitorForecastsItemConfidenceMin = 0;
+export const getRadarPredictiveResponseCompetitorForecastsItemConfidenceMax = 100;
+
+export const getRadarPredictiveResponseOpportunitiesItemConfidenceMin = 0;
+export const getRadarPredictiveResponseOpportunitiesItemConfidenceMax = 100;
+
+export const getRadarPredictiveResponseThreatsItemConfidenceMin = 0;
+export const getRadarPredictiveResponseThreatsItemConfidenceMax = 100;
+
+export const getRadarPredictiveResponseQualityEvidenceCoveragePercentMin = 0;
+export const getRadarPredictiveResponseQualityEvidenceCoveragePercentMax = 100;
+
+export const getRadarPredictiveResponseQualityTrendConsistencyPercentMin = 0;
+export const getRadarPredictiveResponseQualityTrendConsistencyPercentMax = 100;
+
+export const getRadarPredictiveResponseQualityMonitoredSourcesMin = 0;
+
+export const getRadarPredictiveResponseQualitySuccessfulRunsMin = 0;
+
+export const getRadarPredictiveResponsePredictiveAlertsItemConfidenceMin = 0;
+export const getRadarPredictiveResponsePredictiveAlertsItemConfidenceMax = 100;
+
+
+
+export const GetRadarPredictiveResponse = zod.object({
+  "generated_at": zod.string(),
+  "period": zod.object({
+  "from": zod.string(),
+  "to": zod.string(),
+  "days": zod.number().min(getRadarPredictiveResponsePeriodDaysMin).max(getRadarPredictiveResponsePeriodDaysMax)
+}),
+  "methodology": zod.object({
+  "label": zod.string(),
+  "calibration_status": zod.enum(['not_available']),
+  "limitations": zod.array(zod.string())
+}),
+  "market_trends": zod.array(zod.object({
+  "title": zod.string(),
+  "description": zod.string(),
+  "competitor_id": zod.string().nullish(),
+  "confidence": zod.number().min(getRadarPredictiveResponseMarketTrendsItemConfidenceMin).max(getRadarPredictiveResponseMarketTrendsItemConfidenceMax),
+  "evidence_event_ids": zod.array(zod.string())
+})),
+  "competitor_forecasts": zod.array(zod.object({
+  "title": zod.string(),
+  "description": zod.string(),
+  "competitor_id": zod.string().nullish(),
+  "confidence": zod.number().min(getRadarPredictiveResponseCompetitorForecastsItemConfidenceMin).max(getRadarPredictiveResponseCompetitorForecastsItemConfidenceMax),
+  "evidence_event_ids": zod.array(zod.string())
+})),
+  "opportunities": zod.array(zod.object({
+  "title": zod.string(),
+  "description": zod.string(),
+  "competitor_id": zod.string().nullish(),
+  "confidence": zod.number().min(getRadarPredictiveResponseOpportunitiesItemConfidenceMin).max(getRadarPredictiveResponseOpportunitiesItemConfidenceMax),
+  "evidence_event_ids": zod.array(zod.string())
+})),
+  "threats": zod.array(zod.object({
+  "title": zod.string(),
+  "description": zod.string(),
+  "competitor_id": zod.string().nullish(),
+  "confidence": zod.number().min(getRadarPredictiveResponseThreatsItemConfidenceMin).max(getRadarPredictiveResponseThreatsItemConfidenceMax),
+  "evidence_event_ids": zod.array(zod.string())
+})),
+  "scenarios": zod.array(zod.object({
+  "label": zod.enum(['base', 'accelerated', 'quiet']),
+  "description": zod.string(),
+  "input_event_ids": zod.array(zod.string())
+})),
+  "quality": zod.object({
+  "evidence_coverage_percent": zod.number().min(getRadarPredictiveResponseQualityEvidenceCoveragePercentMin).max(getRadarPredictiveResponseQualityEvidenceCoveragePercentMax),
+  "trend_consistency_percent": zod.number().min(getRadarPredictiveResponseQualityTrendConsistencyPercentMin).max(getRadarPredictiveResponseQualityTrendConsistencyPercentMax),
+  "monitored_sources": zod.number().min(getRadarPredictiveResponseQualityMonitoredSourcesMin),
+  "successful_runs": zod.number().min(getRadarPredictiveResponseQualitySuccessfulRunsMin),
+  "labeled_outcomes": zod.literal(0),
+  "calibration_status": zod.enum(['not_available']),
+  "limitations": zod.array(zod.string())
+}),
+  "executive_summary": zod.string(),
+  "predictive_alerts": zod.array(zod.object({
+  "title": zod.string(),
+  "description": zod.string(),
+  "competitor_id": zod.string().nullish(),
+  "confidence": zod.number().min(getRadarPredictiveResponsePredictiveAlertsItemConfidenceMin).max(getRadarPredictiveResponsePredictiveAlertsItemConfidenceMax),
+  "evidence_event_ids": zod.array(zod.string())
+}))
+})
+
+
+/**
+ * @summary Ask an evidence-grounded RadarOH assistant question
+ */
+export const askRadarAssistantBodyQuestionMin = 2;
+export const askRadarAssistantBodyQuestionMax = 1000;
+
+
+
+export const AskRadarAssistantBody = zod.object({
+  "question": zod.string().min(askRadarAssistantBodyQuestionMin).max(askRadarAssistantBodyQuestionMax)
+})
+
+export const askRadarAssistantResponseConfidenceMin = 0;
+export const askRadarAssistantResponseConfidenceMax = 100;
+
+
+
+export const AskRadarAssistantResponse = zod.object({
+  "answer": zod.string(),
+  "confidence": zod.number().min(askRadarAssistantResponseConfidenceMin).max(askRadarAssistantResponseConfidenceMax),
+  "evidence_event_ids": zod.array(zod.string()),
+  "caveat": zod.string()
+})
+
+
+/**
  * @summary Read the integration control plane and department dashboard catalog
  */
 export const GetRadarIntegrationsOverviewResponse = zod.object({
@@ -1473,6 +1606,8 @@ export const GetRadarAlertPreferencesResponse = zod.object({
   "channels": zod.array(zod.string()),
   "updated_at": zod.string()
 })
+
+
 /**
  * @summary Update configurable alert thresholds
  */
@@ -1509,4 +1644,5 @@ export const UpdateRadarAlertPreferencesResponse = zod.object({
   "channels": zod.array(zod.string()),
   "updated_at": zod.string()
 })
+
 

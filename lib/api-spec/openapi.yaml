@@ -16,6 +16,8 @@ tags:
     description: Evidence-grounded RadarOH AI analysis and alerts
   - name: radar-analytics
     description: Executive intelligence dashboards, search and exports
+  - name: radar-predictive
+    description: Evidence-grounded prospective signals and assistant
   - name: radar-integrations
     description: Authorized integration registry, webhooks and delivery observability
 paths:
@@ -458,6 +460,38 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/RadarIntelligence" }
         "400": { $ref: "#/components/responses/ValidationError" }
+  /radar/predictive:
+    get:
+      operationId: getRadarPredictive
+      tags: [radar-predictive]
+      summary: Read deterministic, evidence-grounded prospective signals
+      parameters:
+        - { name: days, in: query, required: false, schema: { type: number, minimum: 30, maximum: 180, default: 90 } }
+      responses:
+        "200":
+          description: Prospective signals, not calibrated forecasts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RadarPredictive" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+  /radar/assistant:
+    post:
+      operationId: askRadarAssistant
+      tags: [radar-predictive]
+      summary: Ask an evidence-grounded RadarOH assistant question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RadarAssistantRequest" }
+      responses:
+        "200":
+          description: Grounded assistant answer
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RadarAssistantResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "500": { $ref: "#/components/responses/ServerError" }
   /radar/integrations/overview:
     get:
       operationId: getRadarIntegrationsOverview
@@ -1284,6 +1318,83 @@ components:
             title: { type: string }
             summary: { type: string }
             generated_at: { type: string }
+    RadarPredictive:
+      type: object
+      required: [generated_at, period, methodology, market_trends, competitor_forecasts, opportunities, threats, scenarios, quality, executive_summary, predictive_alerts]
+      properties:
+        generated_at: { type: string }
+        period:
+          type: object
+          required: [from, to, days]
+          properties:
+            from: { type: string }
+            to: { type: string }
+            days: { type: number, minimum: 30, maximum: 180 }
+        methodology:
+          type: object
+          required: [label, calibration_status, limitations]
+          properties:
+            label: { type: string }
+            calibration_status: { type: string, enum: [not_available] }
+            limitations: { type: array, items: { type: string } }
+        market_trends:
+          type: array
+          items: { $ref: "#/components/schemas/RadarPredictiveSignal" }
+        competitor_forecasts:
+          type: array
+          items: { $ref: "#/components/schemas/RadarPredictiveSignal" }
+        opportunities:
+          type: array
+          items: { $ref: "#/components/schemas/RadarPredictiveSignal" }
+        threats:
+          type: array
+          items: { $ref: "#/components/schemas/RadarPredictiveSignal" }
+        scenarios:
+          type: array
+          items:
+            type: object
+            required: [label, description, input_event_ids]
+            properties:
+              label: { type: string, enum: [base, accelerated, quiet] }
+              description: { type: string }
+              input_event_ids: { type: array, items: { type: string } }
+        quality:
+          type: object
+          required: [evidence_coverage_percent, trend_consistency_percent, monitored_sources, successful_runs, labeled_outcomes, calibration_status, limitations]
+          properties:
+            evidence_coverage_percent: { type: number, minimum: 0, maximum: 100 }
+            trend_consistency_percent: { type: number, minimum: 0, maximum: 100 }
+            monitored_sources: { type: number, minimum: 0 }
+            successful_runs: { type: number, minimum: 0 }
+            labeled_outcomes: { type: number, enum: [0] }
+            calibration_status: { type: string, enum: [not_available] }
+            limitations: { type: array, items: { type: string } }
+        executive_summary: { type: string }
+        predictive_alerts:
+          type: array
+          items: { $ref: "#/components/schemas/RadarPredictiveSignal" }
+    RadarPredictiveSignal:
+      type: object
+      required: [title, description, confidence, evidence_event_ids]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        competitor_id: { type: string, nullable: true }
+        confidence: { type: number, minimum: 0, maximum: 100 }
+        evidence_event_ids: { type: array, items: { type: string } }
+    RadarAssistantRequest:
+      type: object
+      required: [question]
+      properties:
+        question: { type: string, minLength: 2, maxLength: 1000 }
+    RadarAssistantResponse:
+      type: object
+      required: [answer, confidence, evidence_event_ids, caveat]
+      properties:
+        answer: { type: string }
+        confidence: { type: number, minimum: 0, maximum: 100 }
+        evidence_event_ids: { type: array, items: { type: string } }
+        caveat: { type: string }
     RadarCompetitorScorecard:
       type: object
       required: [competitor_id, name, score, band, breakdown, signal_count, last_event_at]

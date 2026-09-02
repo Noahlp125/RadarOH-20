@@ -842,6 +842,123 @@ export interface RadarIntelligence {
   report: RadarIntelligenceReport;
 }
 
+export type RadarPredictivePeriod = {
+  from: string;
+  to: string;
+  /**
+     * @minimum 30
+     * @maximum 180
+     */
+  days: number;
+};
+
+export type RadarPredictiveMethodologyCalibrationStatus = typeof RadarPredictiveMethodologyCalibrationStatus[keyof typeof RadarPredictiveMethodologyCalibrationStatus];
+
+
+export const RadarPredictiveMethodologyCalibrationStatus = {
+  not_available: 'not_available',
+} as const;
+
+export type RadarPredictiveMethodology = {
+  label: string;
+  calibration_status: RadarPredictiveMethodologyCalibrationStatus;
+  limitations: string[];
+};
+
+export type RadarPredictiveScenariosItemLabel = typeof RadarPredictiveScenariosItemLabel[keyof typeof RadarPredictiveScenariosItemLabel];
+
+
+export const RadarPredictiveScenariosItemLabel = {
+  base: 'base',
+  accelerated: 'accelerated',
+  quiet: 'quiet',
+} as const;
+
+export type RadarPredictiveScenariosItem = {
+  label: RadarPredictiveScenariosItemLabel;
+  description: string;
+  input_event_ids: string[];
+};
+
+export type RadarPredictiveQualityLabeledOutcomes = typeof RadarPredictiveQualityLabeledOutcomes[keyof typeof RadarPredictiveQualityLabeledOutcomes];
+
+
+export const RadarPredictiveQualityLabeledOutcomes = {
+  NUMBER_0: 0,
+} as const;
+
+export type RadarPredictiveQualityCalibrationStatus = typeof RadarPredictiveQualityCalibrationStatus[keyof typeof RadarPredictiveQualityCalibrationStatus];
+
+
+export const RadarPredictiveQualityCalibrationStatus = {
+  not_available: 'not_available',
+} as const;
+
+export type RadarPredictiveQuality = {
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  evidence_coverage_percent: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  trend_consistency_percent: number;
+  /** @minimum 0 */
+  monitored_sources: number;
+  /** @minimum 0 */
+  successful_runs: number;
+  labeled_outcomes: RadarPredictiveQualityLabeledOutcomes;
+  calibration_status: RadarPredictiveQualityCalibrationStatus;
+  limitations: string[];
+};
+
+export interface RadarPredictiveSignal {
+  title: string;
+  description: string;
+  competitor_id?: string | null;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  confidence: number;
+  evidence_event_ids: string[];
+}
+
+export interface RadarPredictive {
+  generated_at: string;
+  period: RadarPredictivePeriod;
+  methodology: RadarPredictiveMethodology;
+  market_trends: RadarPredictiveSignal[];
+  competitor_forecasts: RadarPredictiveSignal[];
+  opportunities: RadarPredictiveSignal[];
+  threats: RadarPredictiveSignal[];
+  scenarios: RadarPredictiveScenariosItem[];
+  quality: RadarPredictiveQuality;
+  executive_summary: string;
+  predictive_alerts: RadarPredictiveSignal[];
+}
+
+export interface RadarAssistantRequest {
+  /**
+     * @minLength 2
+     * @maxLength 1000
+     */
+  question: string;
+}
+
+export interface RadarAssistantResponse {
+  answer: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  confidence: number;
+  evidence_event_ids: string[];
+  caveat: string;
+}
+
 export type RadarIntegrationStatus = typeof RadarIntegrationStatus[keyof typeof RadarIntegrationStatus];
 
 
@@ -1064,6 +1181,14 @@ export type GetRadarIntelligenceParams = {
 days?: number;
 };
 
+export type GetRadarPredictiveParams = {
+/**
+ * @minimum 30
+ * @maximum 180
+ */
+days?: number;
+};
+
 export type SearchRadarParams = {
 /**
  * @minLength 2
@@ -1091,3 +1216,4 @@ export const ExportRadarExecutiveReportPriority = {
   high: 'high',
   critical: 'critical',
 } as const;
+

@@ -3,6 +3,10 @@ import {
   GetRadarAlertPreferencesResponse,
   GetRadarExecutiveDashboardResponse,
   GetRadarIntelligenceResponse,
+  GetRadarPredictiveQueryParams,
+  GetRadarPredictiveResponse,
+  AskRadarAssistantBody,
+  AskRadarAssistantResponse,
   SearchRadarQueryParams,
   SearchRadarResponse,
   UpdateRadarAlertPreferencesBody,
@@ -18,6 +22,7 @@ import {
   updateAlertPreferences,
 } from "../lib/radar/dashboard";
 import { getRadarIntelligence, intelligenceQuerySchema } from "../lib/radar/intelligence";
+import { askRadarAssistant, getRadarPredictive, RadarAssistantEvidenceError } from "../lib/radar/predictive";
 
 const router: IRouter = Router();
 
@@ -41,6 +46,36 @@ router.get("/radar/intelligence", async (req, res): Promise<void> => {
   const intelligence = await getRadarIntelligence(query.data);
   GetRadarIntelligenceResponse.parse(intelligence);
   res.json(intelligence);
+});
+
+router.get("/radar/predictive", async (req, res): Promise<void> => {
+  const query = GetRadarPredictiveQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const predictive = await getRadarPredictive(query.data.days);
+  GetRadarPredictiveResponse.parse(predictive);
+  res.json(predictive);
+});
+
+router.post("/radar/assistant", async (req, res): Promise<void> => {
+  const body = AskRadarAssistantBody.safeParse(req.body);
+  if (!body.success || body.data.question.trim().length < 2) {
+    res.status(400).json({ error: body.success ? "question debe contener al menos 2 caracteres no vacíos" : body.error.message });
+    return;
+  }
+  try {
+    const answer = await askRadarAssistant(body.data.question.trim());
+    AskRadarAssistantResponse.parse(answer);
+    res.json(answer);
+  } catch (error) {
+    if (error instanceof RadarAssistantEvidenceError) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
 });
 
 router.get("/radar/search", async (req, res): Promise<void> => {
