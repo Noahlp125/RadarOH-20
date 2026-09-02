@@ -50,9 +50,13 @@ type RadarStateResponse = {
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const blocked = new Set(["__proto__", "constructor", "prototype"]);
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !blocked.has(key))
+      .slice(0, 100),
+  );
 }
 
 function mapSource(row: typeof radarSources.$inferSelect) {
@@ -124,6 +128,7 @@ export async function withRadarTransaction<T>(
       .insert(radarWorkspaces)
       .values({ id: RADAR_WORKSPACE_ID, name: "OH Casas" })
       .onConflictDoNothing();
+    await tx.execute(sql`set local role radar_app`);
     return callback(tx);
   });
 }

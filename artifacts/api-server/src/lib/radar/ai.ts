@@ -204,6 +204,14 @@ export function startRadarAiScheduler() {
   logger.info({ intervalMs: AI_INTERVAL_MS, model: MODEL }, "RadarOH AI scheduler started");
 }
 
+export function stopRadarAiScheduler() {
+  if (aiScheduler) {
+    clearInterval(aiScheduler);
+    aiScheduler = null;
+  }
+  logger.info("RadarOH AI scheduler stopped");
+}
+
 async function loadUnanalyzedEvidence(limit: number, sourceLegacyId?: string) {
   const safeLimit = Math.max(1, Math.min(50, Math.floor(limit)));
   return withRadarTransaction(async (tx) => {

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const idSchema = z.string().min(1).max(255);
-const stringField = z.string().default("");
+const stringField = z.string().max(5_000).default("");
 const nullableIdSchema = idSchema.nullable().optional();
 export const radarConnectorSchema = z.enum(["manual", "rss", "json_api", "web"]);
 
@@ -80,26 +80,26 @@ export const radarPlanItemSchema = z
 
 export const radarPlanSchema = z
   .object({
-    "30": z.array(radarPlanItemSchema).default([]),
-    "60": z.array(radarPlanItemSchema).default([]),
-    "90": z.array(radarPlanItemSchema).default([]),
+    "30": z.array(radarPlanItemSchema).max(500).default([]),
+    "60": z.array(radarPlanItemSchema).max(500).default([]),
+    "90": z.array(radarPlanItemSchema).max(500).default([]),
   })
   .passthrough();
 
 export const radarImportPayloadSchema = z
   .object({
-    sources: z.array(radarSourceSchema).optional(),
-    competitors: z.array(radarCompetitorSchema).optional(),
-    keywords: z.array(radarKeywordSchema).optional(),
+    sources: z.array(radarSourceSchema).max(500).optional(),
+    competitors: z.array(radarCompetitorSchema).max(500).optional(),
+    keywords: z.array(radarKeywordSchema).max(1_000).optional(),
     plan: radarPlanSchema.optional(),
-    exportedAt: z.string().optional(),
+    exportedAt: z.string().datetime().optional(),
   })
   .passthrough();
 
 export const radarStateSchema = z.object({
-  sources: z.array(radarSourceSchema),
-  competitors: z.array(radarCompetitorSchema),
-  keywords: z.array(radarKeywordSchema),
+  sources: z.array(radarSourceSchema).max(500),
+  competitors: z.array(radarCompetitorSchema).max(500),
+  keywords: z.array(radarKeywordSchema).max(1_000),
   plan: radarPlanSchema,
 });
 

@@ -240,6 +240,14 @@ export function startRadarMonitorScheduler() {
   logger.info({ intervalMs: SCHEDULER_INTERVAL_MS }, "RadarOH monitor scheduler started");
 }
 
+export function stopRadarMonitorScheduler() {
+  if (schedulerTimer) {
+    clearInterval(schedulerTimer);
+    schedulerTimer = null;
+  }
+  logger.info("RadarOH monitor scheduler stopped");
+}
+
 async function getRunnableSources(sourceLegacyId?: string) {
   return withRadarTransaction(async (tx) => {
     const rows = await tx

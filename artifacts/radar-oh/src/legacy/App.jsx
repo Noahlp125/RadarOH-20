@@ -20,6 +20,7 @@ import {
   ListChecks,
   MapPin,
   Menu,
+  LogOut,
   Plus,
   Play,
   Radar,
@@ -50,6 +51,7 @@ import {
   fetchRadarAiAlerts,
   markRadarAiAlert,
 } from "../data/radarApi";
+import { useUser, useClerk } from "@clerk/react";
 
 const EjecutivoTab = lazy(() => import("../components/EjecutivoTab"));
 const ComparativaTab = lazy(() => import("../components/ComparativaTab"));
@@ -114,6 +116,8 @@ const emptySource = () => ({
 const emptyKeyword = () => ({ id: uid(), termino: "", volumen: "Medio", posicion: "", notas: "" });
 
 export default function RadarOH() {
+  const { user, isLoaded: userLoaded } = useUser();
+  const { signOut } = useClerk();
   const [loading, setLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("connecting");
   const [syncError, setSyncError] = useState("");
@@ -431,7 +435,13 @@ export default function RadarOH() {
             <div className="rdo-topbar-right">
               <GlobalSearch onNavigate={selectTab} />
               <span className="rdo-date">{today}</span>
-              <div className="rdo-profile"><span className="rdo-avatar">AL</span><span className="rdo-profile-name">Ainhoa López</span></div>
+              <div className="rdo-profile">
+                <span className="rdo-avatar">{user?.firstName?.[0] || user?.primaryEmailAddress?.emailAddress?.[0]?.toUpperCase() || "?"}</span>
+                <span className="rdo-profile-name">{user?.fullName || user?.primaryEmailAddress?.emailAddress || "Usuario"}</span>
+                <button onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL })} className="rdo-icon-button" style={{marginLeft: 8, width: 24, height: 24}} title="Cerrar sesión">
+                  <LogOut size={14} />
+                </button>
+              </div>
             </div>
           </header>
           <main className="rdo-content">
