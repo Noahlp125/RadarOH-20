@@ -5,6 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { RadarSourceConnector } from './radarSourceConnector';
+import type { RadarSourceLastStatus } from './radarSourceLastStatus';
 
 export interface RadarSource {
   id: string;
@@ -12,5 +14,15 @@ export interface RadarSource {
   tipo: string;
   frecuencia: string;
   notas: string;
+  connector: RadarSourceConnector;
+  endpoint_url: string;
+  enabled: boolean;
+  competitor_id: string | null;
+  last_run_at?: string | null;
+  next_run_at?: string | null;
+  last_status: RadarSourceLastStatus;
+  last_error: string;
+  /** @minimum 0 */
+  consecutive_failures: number;
   [key: string]: unknown;
  }

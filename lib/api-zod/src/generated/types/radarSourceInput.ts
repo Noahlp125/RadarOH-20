@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { RadarSourceInputConnector } from './radarSourceInputConnector';
 
 export interface RadarSourceInput {
   id?: string;
@@ -12,5 +13,9 @@ export interface RadarSourceInput {
   tipo: string;
   frecuencia: string;
   notas: string;
+  connector?: RadarSourceInputConnector;
+  endpoint_url?: string;
+  enabled?: boolean;
+  competitor_id?: string | null;
   [key: string]: unknown;
  }

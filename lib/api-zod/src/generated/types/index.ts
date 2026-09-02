@@ -7,8 +7,11 @@
  */
 
 export * from './errorResponse';
+export * from './getRadarMonitorHistoryParams';
 export * from './healthStatus';
 export * from './notFoundResponse';
+export * from './radarChangeEvent';
+export * from './radarChangeEventChangeType';
 export * from './radarCompetitor';
 export * from './radarCompetitorInput';
 export * from './radarCompetitorUpdate';
@@ -18,11 +21,25 @@ export * from './radarImportResult';
 export * from './radarKeyword';
 export * from './radarKeywordInput';
 export * from './radarKeywordUpdate';
+export * from './radarMonitorRun';
+export * from './radarMonitorRunRequest';
+export * from './radarMonitorRunResult';
+export * from './radarMonitorRunStatus';
+export * from './radarMonitorRunTrigger';
+export * from './radarMonitorSourceStatus';
+export * from './radarMonitorSourceStatusConnector';
+export * from './radarMonitorSourceStatusLastStatus';
+export * from './radarMonitorStatus';
+export * from './radarMonitorStatusSummary';
 export * from './radarPlan';
 export * from './radarPlanItem';
 export * from './radarSource';
+export * from './radarSourceConnector';
 export * from './radarSourceInput';
+export * from './radarSourceInputConnector';
+export * from './radarSourceLastStatus';
 export * from './radarSourceUpdate';
+export * from './radarSourceUpdateConnector';
 export * from './radarState';
 export * from './radarStateInput';
 export * from './radarValidationSummary';

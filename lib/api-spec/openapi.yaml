@@ -272,6 +272,68 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/ServerError"
+  /radar/monitor/status:
+    get:
+      operationId: getRadarMonitorStatus
+      tags: [radar]
+      summary: Read monitoring status, recent runs and changes
+      responses:
+        "200":
+          description: Current monitor status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarMonitorStatus"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /radar/monitor/run:
+    post:
+      operationId: runRadarMonitor
+      tags: [radar]
+      summary: Run one source or all configured sources now
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RadarMonitorRunRequest"
+      responses:
+        "200":
+          description: Monitor execution result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarMonitorRunResult"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /radar/monitor/history:
+    get:
+      operationId: getRadarMonitorHistory
+      tags: [radar]
+      summary: Read change history, optionally filtered by competitor
+      parameters:
+        - name: competitor_id
+          in: query
+          required: false
+          schema: { type: string }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: number, minimum: 1, maximum: 100 }
+      responses:
+        "200":
+          description: Change events
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RadarChangeEvent" }
+        "500":
+          $ref: "#/components/responses/ServerError"
 components:
   parameters:
     RadarId:
@@ -317,13 +379,22 @@ components:
     RadarSource:
       type: object
       additionalProperties: true
-      required: [id, termino, tipo, frecuencia, notas]
+      required: [id, termino, tipo, frecuencia, notas, connector, endpoint_url, enabled, competitor_id, last_status, last_error, consecutive_failures]
       properties:
         id: { type: string }
         termino: { type: string }
         tipo: { type: string }
         frecuencia: { type: string }
         notas: { type: string }
+        connector: { type: string, enum: [manual, rss, json_api, web] }
+        endpoint_url: { type: string }
+        enabled: { type: boolean }
+        competitor_id: { type: string, nullable: true }
+        last_run_at: { type: string, nullable: true }
+        next_run_at: { type: string, nullable: true }
+        last_status: { type: string, enum: [idle, running, success, error] }
+        last_error: { type: string }
+        consecutive_failures: { type: number, minimum: 0 }
     RadarSourceInput:
       type: object
       additionalProperties: true
@@ -334,6 +405,10 @@ components:
         tipo: { type: string }
         frecuencia: { type: string }
         notas: { type: string }
+        connector: { type: string, enum: [manual, rss, json_api, web] }
+        endpoint_url: { type: string }
+        enabled: { type: boolean }
+        competitor_id: { type: string, nullable: true }
     RadarSourceUpdate:
       type: object
       additionalProperties: true
@@ -342,6 +417,10 @@ components:
         tipo: { type: string }
         frecuencia: { type: string }
         notas: { type: string }
+        connector: { type: string, enum: [manual, rss, json_api, web] }
+        endpoint_url: { type: string }
+        enabled: { type: boolean }
+        competitor_id: { type: string, nullable: true }
     RadarCompetitor:
       type: object
       additionalProperties: true
@@ -509,4 +588,90 @@ components:
           $ref: "#/components/schemas/RadarState"
         validation:
           $ref: "#/components/schemas/RadarValidationSummary"
+    RadarMonitorRunRequest:
+      type: object
+      properties:
+        source_id: { type: string }
+    RadarMonitorRun:
+      type: object
+      required: [id, source_id, source_label, trigger, status, started_at, finished_at, attempts, item_count, change_count, http_status, error_message, duration_ms]
+      properties:
+        id: { type: string }
+        source_id: { type: string }
+        source_label: { type: string }
+        trigger: { type: string, enum: [scheduler, manual, retry] }
+        status: { type: string, enum: [running, success, error] }
+        started_at: { type: string }
+        finished_at: { type: string, nullable: true }
+        attempts: { type: number, minimum: 0 }
+        item_count: { type: number, minimum: 0 }
+        change_count: { type: number, minimum: 0 }
+        http_status: { type: number, nullable: true }
+        error_message: { type: string }
+        duration_ms: { type: number, nullable: true }
+    RadarChangeEvent:
+      type: object
+      required: [id, source_id, source_label, run_id, evidence_id, competitor_id, competitor_name, change_type, title, summary, url, previous_fingerprint, fingerprint, occurred_at]
+      properties:
+        id: { type: string }
+        source_id: { type: string }
+        source_label: { type: string }
+        run_id: { type: string }
+        evidence_id: { type: string }
+        competitor_id: { type: string, nullable: true }
+        competitor_name: { type: string, nullable: true }
+        change_type: { type: string, enum: [new, updated] }
+        title: { type: string }
+        summary: { type: string }
+        url: { type: string }
+        previous_fingerprint: { type: string, nullable: true }
+        fingerprint: { type: string }
+        occurred_at: { type: string }
+    RadarMonitorSourceStatus:
+      type: object
+      required: [source_id, source_label, connector, endpoint_url, enabled, last_status, last_run_at, next_run_at, last_error, consecutive_failures]
+      properties:
+        source_id: { type: string }
+        source_label: { type: string }
+        connector: { type: string, enum: [manual, rss, json_api, web] }
+        endpoint_url: { type: string }
+        enabled: { type: boolean }
+        last_status: { type: string, enum: [idle, running, success, error] }
+        last_run_at: { type: string, nullable: true }
+        next_run_at: { type: string, nullable: true }
+        last_error: { type: string }
+        consecutive_failures: { type: number, minimum: 0 }
+    RadarMonitorStatus:
+      type: object
+      required: [summary, sources, recent_runs, recent_changes]
+      properties:
+        summary:
+          type: object
+          required: [total_sources, enabled_sources, healthy_sources, error_sources, last_run_at, next_run_at]
+          properties:
+            total_sources: { type: number, minimum: 0 }
+            enabled_sources: { type: number, minimum: 0 }
+            healthy_sources: { type: number, minimum: 0 }
+            error_sources: { type: number, minimum: 0 }
+            last_run_at: { type: string, nullable: true }
+            next_run_at: { type: string, nullable: true }
+        sources:
+          type: array
+          items: { $ref: "#/components/schemas/RadarMonitorSourceStatus" }
+        recent_runs:
+          type: array
+          items: { $ref: "#/components/schemas/RadarMonitorRun" }
+        recent_changes:
+          type: array
+          items: { $ref: "#/components/schemas/RadarChangeEvent" }
+    RadarMonitorRunResult:
+      type: object
+      required: [runs, changes]
+      properties:
+        runs:
+          type: array
+          items: { $ref: "#/components/schemas/RadarMonitorRun" }
+        changes:
+          type: array
+          items: { $ref: "#/components/schemas/RadarChangeEvent" }
 

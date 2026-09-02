@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, notInArray, sql } from "drizzle-orm";
 import { db, type RadarTransaction } from "@workspace/db";
 import {
   radarCompetitors,
@@ -63,6 +63,15 @@ function mapSource(row: typeof radarSources.$inferSelect) {
     tipo: row.tipo,
     frecuencia: row.frecuencia,
     notas: row.notas,
+    connector: row.connector,
+    endpoint_url: row.endpointUrl,
+    enabled: row.enabled,
+    competitor_id: row.competitorId,
+    last_run_at: row.lastRunAt?.toISOString() ?? null,
+    next_run_at: row.nextRunAt?.toISOString() ?? null,
+    last_status: row.lastStatus,
+    last_error: row.lastError,
+    consecutive_failures: row.consecutiveFailures,
   };
 }
 
@@ -120,28 +129,26 @@ export async function withRadarTransaction<T>(
 }
 
 async function readStateTx(tx: RadarTransaction): Promise<RadarStateResponse> {
-  const [sources, competitors, keywords, planItems] = await Promise.all([
-    tx
-      .select()
-      .from(radarSources)
-      .where(eq(radarSources.workspaceId, RADAR_WORKSPACE_ID))
-      .orderBy(asc(radarSources.createdAt)),
-    tx
-      .select()
-      .from(radarCompetitors)
-      .where(eq(radarCompetitors.workspaceId, RADAR_WORKSPACE_ID))
-      .orderBy(asc(radarCompetitors.createdAt)),
-    tx
-      .select()
-      .from(radarKeywords)
-      .where(eq(radarKeywords.workspaceId, RADAR_WORKSPACE_ID))
-      .orderBy(asc(radarKeywords.createdAt)),
-    tx
-      .select()
-      .from(radarPlanItems)
-      .where(eq(radarPlanItems.workspaceId, RADAR_WORKSPACE_ID))
-      .orderBy(asc(radarPlanItems.createdAt)),
-  ]);
+  const sources = await tx
+    .select()
+    .from(radarSources)
+    .where(eq(radarSources.workspaceId, RADAR_WORKSPACE_ID))
+    .orderBy(asc(radarSources.createdAt));
+  const competitors = await tx
+    .select()
+    .from(radarCompetitors)
+    .where(eq(radarCompetitors.workspaceId, RADAR_WORKSPACE_ID))
+    .orderBy(asc(radarCompetitors.createdAt));
+  const keywords = await tx
+    .select()
+    .from(radarKeywords)
+    .where(eq(radarKeywords.workspaceId, RADAR_WORKSPACE_ID))
+    .orderBy(asc(radarKeywords.createdAt));
+  const planItems = await tx
+    .select()
+    .from(radarPlanItems)
+    .where(eq(radarPlanItems.workspaceId, RADAR_WORKSPACE_ID))
+    .orderBy(asc(radarPlanItems.createdAt));
 
   return {
     workspaceId: RADAR_WORKSPACE_ID,
@@ -170,6 +177,10 @@ function normalizedSource(input: unknown) {
     tipo: parsed.tipo,
     frecuencia: parsed.frecuencia,
     notas: parsed.notas,
+    connector: parsed.connector,
+    endpointUrl: parsed.endpoint_url,
+    enabled: parsed.enabled,
+    competitorId: parsed.competitor_id ?? null,
     rawRecord: asRecord(input),
   };
 }
@@ -228,21 +239,6 @@ async function replaceStateTx(
   const state = radarStateSchema.parse(input);
   const now = new Date();
 
-  await Promise.all([
-    tx
-      .delete(radarSources)
-      .where(eq(radarSources.workspaceId, RADAR_WORKSPACE_ID)),
-    tx
-      .delete(radarCompetitors)
-      .where(eq(radarCompetitors.workspaceId, RADAR_WORKSPACE_ID)),
-    tx
-      .delete(radarKeywords)
-      .where(eq(radarKeywords.workspaceId, RADAR_WORKSPACE_ID)),
-    tx
-      .delete(radarPlanItems)
-      .where(eq(radarPlanItems.workspaceId, RADAR_WORKSPACE_ID)),
-  ]);
-
   const sourceRows = state.sources.map((item: unknown) => ({
     ...normalizedSource(item),
     workspaceId: RADAR_WORKSPACE_ID,
@@ -271,13 +267,88 @@ async function replaceStateTx(
     })),
   );
 
-  if (sourceRows.length) await tx.insert(radarSources).values(sourceRows);
-  if (competitorRows.length)
-    await tx.insert(radarCompetitors).values(competitorRows);
-  if (keywordRows.length) await tx.insert(radarKeywords).values(keywordRows);
-  if (planRows.length) await tx.insert(radarPlanItems).values(planRows);
+  await deleteMissingRows(tx, radarPlanItems, planRows.map((row) => row.legacyId));
+  await deleteMissingRows(tx, radarKeywords, keywordRows.map((row) => row.legacyId));
+  for (const row of competitorRows) {
+    await tx.insert(radarCompetitors).values(row).onConflictDoUpdate({
+      target: radarCompetitors.id,
+      set: {
+        nombre: row.nombre,
+        ubicacion: row.ubicacion,
+        especialidad: row.especialidad,
+        rangoPrecio: row.rangoPrecio,
+        web: row.web,
+        redes: row.redes,
+        fortalezas: row.fortalezas,
+        debilidades: row.debilidades,
+        notas: row.notas,
+        prioridad: row.prioridad,
+        estado: row.estado,
+        rawRecord: row.rawRecord,
+        updatedAt: now,
+      },
+    });
+  }
+  for (const row of sourceRows) {
+    await tx.insert(radarSources).values(row).onConflictDoUpdate({
+      target: radarSources.id,
+      set: {
+        termino: row.termino,
+        tipo: row.tipo,
+        frecuencia: row.frecuencia,
+        notas: row.notas,
+        connector: row.connector,
+        endpointUrl: row.endpointUrl,
+        enabled: row.enabled,
+        competitorId: row.competitorId,
+        rawRecord: row.rawRecord,
+        updatedAt: now,
+      },
+    });
+  }
+  for (const row of keywordRows) {
+    await tx.insert(radarKeywords).values(row).onConflictDoUpdate({
+      target: radarKeywords.id,
+      set: {
+        termino: row.termino,
+        volumen: row.volumen,
+        posicion: row.posicion,
+        notas: row.notas,
+        rawRecord: row.rawRecord,
+        updatedAt: now,
+      },
+    });
+  }
+  for (const row of planRows) {
+    await tx.insert(radarPlanItems).values(row).onConflictDoUpdate({
+      target: radarPlanItems.id,
+      set: {
+        horizon: row.horizon,
+        text: row.text,
+        done: row.done,
+        rawRecord: row.rawRecord,
+        updatedAt: now,
+      },
+    });
+  }
 
   return readStateTx(tx);
+}
+
+async function deleteMissingRows(
+  tx: RadarTransaction,
+  table: typeof radarSources | typeof radarCompetitors | typeof radarKeywords | typeof radarPlanItems,
+  legacyIds: string[],
+) {
+  const workspaceColumn = table.workspaceId;
+  const legacyIdColumn = table.legacyId;
+  const condition = legacyIds.length
+    ? and(
+        eq(workspaceColumn, RADAR_WORKSPACE_ID),
+        notInArray(legacyIdColumn, legacyIds),
+      )
+    : eq(workspaceColumn, RADAR_WORKSPACE_ID);
+  await tx.delete(table).where(condition);
 }
 
 export async function replaceRadarState(
@@ -371,6 +442,10 @@ export async function updateRadarSource(id: string, input: unknown) {
       tipo: next.tipo,
       frecuencia: next.frecuencia,
       notas: next.notas,
+      connector: next.connector,
+      endpointUrl: next.endpoint_url,
+      enabled: next.enabled,
+      competitorId: next.competitor_id ?? null,
       rawRecord: { ...asRecord(existing.rawRecord), ...asRecord(input) },
       updatedAt: new Date(),
     }).where(eq(radarSources.id, existing.id)).returning();

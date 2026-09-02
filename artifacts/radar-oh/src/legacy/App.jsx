@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
+  AlertTriangle,
   ArrowUpRight,
   BellRing,
   Building2,
   Check,
+  CheckCircle2,
   ChevronDown,
+  Clock3,
   CircleDot,
   Download,
+  ExternalLink,
   Gauge,
   History,
   Layers3,
@@ -15,7 +19,10 @@ import {
   MapPin,
   Menu,
   Plus,
+  Play,
   Radar,
+  RefreshCw,
+  Rss,
   Search,
   Tags,
   Target,
@@ -25,8 +32,13 @@ import {
 } from "lucide-react";
 import {
   fetchRadarState,
+  fetchRadarMonitorHistory,
+  fetchRadarMonitorStatus,
   importRadarSnapshot,
+  removeRadarCompetitor,
+  removeRadarSource,
   saveRadarState,
+  triggerRadarMonitor,
 } from "../data/radarApi";
 
 const KEYS = {
@@ -74,7 +86,17 @@ const emptyCompetitor = () => ({
   prioridad: "media",
   estado: "pendiente",
 });
-const emptySource = () => ({ id: uid(), termino: "", tipo: TIPOS_FUENTE[0], frecuencia: FRECUENCIAS[0], notas: "" });
+const emptySource = () => ({
+  id: uid(),
+  termino: "",
+  tipo: TIPOS_FUENTE[0],
+  frecuencia: FRECUENCIAS[0],
+  notas: "",
+  connector: "manual",
+  endpoint_url: "",
+  enabled: false,
+  competitor_id: null,
+});
 const emptyKeyword = () => ({ id: uid(), termino: "", volumen: "Medio", posicion: "", notas: "" });
 
 export default function RadarOH() {
@@ -88,10 +110,74 @@ export default function RadarOH() {
   const [plan, setPlan] = useState({ "30": [], "60": [], "90": [] });
   const [expandedCompetitor, setExpandedCompetitor] = useState(null);
   const [addingSource, setAddingSource] = useState(false);
+  const [monitorStatus, setMonitorStatus] = useState(null);
+  const [monitorHistory, setMonitorHistory] = useState([]);
+  const [monitorLoading, setMonitorLoading] = useState(false);
+  const [monitorError, setMonitorError] = useState("");
+  const [runningSource, setRunningSource] = useState(null);
   const [addingKeyword, setAddingKeyword] = useState(false);
   const [newPlanText, setNewPlanText] = useState({ "30": "", "60": "", "90": "" });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const importInputRef = useRef(null);
+
+  const loadMonitorData = async (includeHistory = false) => {
+    setMonitorLoading(true);
+    setMonitorError("");
+    try {
+      const [status, history] = await Promise.all([
+        fetchRadarMonitorStatus(),
+        includeHistory ? fetchRadarMonitorHistory() : Promise.resolve(null),
+      ]);
+      setMonitorStatus(status);
+      if (history) setMonitorHistory(history);
+    } catch (error) {
+      setMonitorError(error instanceof Error ? error.message : "No se pudo cargar la monitorización.");
+    } finally {
+      setMonitorLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!loading && (tab === "monitorizacion" || tab === "historial")) {
+      void loadMonitorData(tab === "historial");
+    }
+  }, [tab, loading]);
+
+  const runMonitor = async (sourceId) => {
+    setRunningSource(sourceId || "all");
+    setMonitorError("");
+    try {
+      await triggerRadarMonitor(sourceId);
+      const [state] = await Promise.all([
+        fetchRadarState(),
+        loadMonitorData(tab === "historial"),
+      ]);
+      setSources(state.sources || []);
+    } catch (error) {
+      setMonitorError(error instanceof Error ? error.message : "No se pudo ejecutar la monitorización.");
+    } finally {
+      setRunningSource(null);
+    }
+  };
+
+  const deleteSource = async (sourceId) => {
+    try {
+      await removeRadarSource(sourceId);
+      setSources((current) => current.filter((source) => source.id !== sourceId));
+    } catch (error) {
+      setSyncError(error instanceof Error ? error.message : "No se pudo eliminar la fuente.");
+    }
+  };
+
+  const deleteCompetitor = async (competitorId) => {
+    try {
+      await removeRadarCompetitor(competitorId);
+      setCompetitors((current) => current.filter((competitor) => competitor.id !== competitorId));
+      if (expandedCompetitor === competitorId) setExpandedCompetitor(null);
+    } catch (error) {
+      setSyncError(error instanceof Error ? error.message : "No se pudo eliminar el competidor.");
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -295,17 +381,20 @@ export default function RadarOH() {
                 onSelect={selectTab}
               />
             )}
-            {tab === "fuentes" && <FuentesTab sources={sources} setSources={setSources} adding={addingSource} setAdding={setAddingSource} />}
+            {tab === "fuentes" && <FuentesTab sources={sources} setSources={setSources} competitors={competitors} adding={addingSource} setAdding={setAddingSource} onRemove={deleteSource} />}
             {tab === "competidores" && (
               <CompetidoresTab
                 competitors={competitors}
                 setCompetitors={setCompetitors}
                 expandedId={expandedCompetitor}
                 setExpandedId={setExpandedCompetitor}
+                onRemove={deleteCompetitor}
               />
             )}
             {tab === "keywords" && <KeywordsTab keywords={keywords} setKeywords={setKeywords} adding={addingKeyword} setAdding={setAddingKeyword} />}
             {tab === "plan" && <PlanTab plan={plan} setPlan={setPlan} newPlanText={newPlanText} setNewPlanText={setNewPlanText} />}
+            {tab === "monitorizacion" && <MonitorizacionTab status={monitorStatus} loading={monitorLoading} error={monitorError} runningSource={runningSource} onRefresh={() => loadMonitorData(false)} onRun={runMonitor} onConfigure={() => selectTab("fuentes")} />}
+            {tab === "historial" && <HistorialTab events={monitorHistory} competitors={competitors} loading={monitorLoading} error={monitorError} onRefresh={() => loadMonitorData(true)} />}
           </main>
         </div>
       </div>
@@ -315,7 +404,7 @@ export default function RadarOH() {
 }
 
 function tabTitle(tab) {
-  return { fuentes: "Fuentes de señal", competidores: "Mapa competitivo", keywords: "Keywords estratégicas", plan: "Plan de situación" }[tab] || "RadarOH";
+  return { fuentes: "Fuentes de señal", competidores: "Mapa competitivo", keywords: "Keywords estratégicas", plan: "Plan de situación", monitorizacion: "Monitorización automática", historial: "Historial competitivo" }[tab] || "RadarOH";
 }
 
 function Sidebar({ tab, onSelect, open, today }) {
@@ -325,9 +414,9 @@ function Sidebar({ tab, onSelect, open, today }) {
     { id: "competidores", label: "Competidores", icon: Building2, group: "Espacio de trabajo" },
     { id: "keywords", label: "Keywords", icon: Tags, group: "Espacio de trabajo" },
     { id: "plan", label: "Plan 30–60–90", icon: ListChecks, group: "Espacio de trabajo" },
-    { id: "monitorizacion", label: "Monitorización", icon: Activity, disabled: true, group: "Próximamente" },
+    { id: "monitorizacion", label: "Monitorización", icon: Activity, group: "Inteligencia continua" },
+    { id: "historial", label: "Historial", icon: History, group: "Inteligencia continua" },
     { id: "alertas", label: "Alertas", icon: BellRing, disabled: true, group: "Próximamente" },
-    { id: "historial", label: "Historial", icon: History, disabled: true, group: "Próximamente" },
   ];
   return (
     <aside className={`rdo-sidebar ${open ? "open" : ""}`}>
@@ -335,7 +424,7 @@ function Sidebar({ tab, onSelect, open, today }) {
         <span className="rdo-brand-mark"><Radar size={19} /></span>
         <div><div className="rdo-brand-name">RadarOH</div><div className="rdo-brand-sub">OH Casas / signal desk</div></div>
       </div>
-      {["Espacio de trabajo", "Próximamente"].map((group) => (
+      {["Espacio de trabajo", "Inteligencia continua", "Próximamente"].map((group) => (
         <div key={group} style={{ marginBottom: group === "Espacio de trabajo" ? 24 : 0 }}>
           <div className="rdo-nav-label">{group}</div>
           <nav className="rdo-nav" aria-label={group}>
@@ -463,28 +552,97 @@ function CollectionRow({ icon: Icon, title, note, count, action }) {
 }
 function priorityColor(priority) { return priority === "alta" ? "hsl(7 65% 47%)" : priority === "media" ? "hsl(38 78% 47%)" : "hsl(170 31% 42%)"; }
 
-function FuentesTab({ sources, setSources, adding, setAdding }) {
+function FuentesTab({ sources, setSources, competitors, adding, setAdding, onRemove }) {
   const [draft, setDraft] = useState(emptySource());
+  const [expandedId, setExpandedId] = useState(null);
   const save = () => {
     if (!draft.termino.trim()) return;
     setSources([...sources, draft]); setDraft(emptySource()); setAdding(false);
   };
   const grouped = TIPOS_FUENTE.map((tipo) => ({ tipo, items: sources.filter((source) => source.tipo === tipo) }));
+  const update = (id, patch) => setSources(sources.map((source) => source.id === id ? { ...source, ...patch } : source));
   return (
     <>
       <PageIntro eyebrow="01 / señales" title="Fuentes de señal" description="Términos, canales y frecuencia con los que se seguirá a OH Casas y al mercado." action={!adding && <AddButton onClick={() => setAdding(true)} label="Añadir fuente" />} />
       {adding && <Panel><SectionHead index="NUEVA FUENTE" title="Configurar señal" description="Define qué debe entrar en tu lectura recurrente." /><div className="rdo-form-grid three"><Field label="Término o búsqueda" full={false}><input autoFocus className="rdo-control" placeholder="Ej. casas modulares Valencia" value={draft.termino} onChange={(event) => setDraft({ ...draft, termino: event.target.value })} data-testid="input-source-term" /></Field><Field label="Tipo"><select className="rdo-control" value={draft.tipo} onChange={(event) => setDraft({ ...draft, tipo: event.target.value })} data-testid="select-source-type">{TIPOS_FUENTE.map((type) => <option key={type}>{type}</option>)}</select></Field><Field label="Frecuencia"><select className="rdo-control" value={draft.frecuencia} onChange={(event) => setDraft({ ...draft, frecuencia: event.target.value })} data-testid="select-source-frequency">{FRECUENCIAS.map((frequency) => <option key={frequency}>{frequency}</option>)}</select></Field><Field label="Notas" full><textarea className="rdo-control textarea" placeholder="Contexto de esta fuente (opcional)" value={draft.notas} onChange={(event) => setDraft({ ...draft, notas: event.target.value })} data-testid="textarea-source-notes" /></Field></div><FormActions onCancel={() => { setAdding(false); setDraft(emptySource()); }} onSave={save} /></Panel>}
-      <div style={{ marginTop: adding ? 14 : 0 }}>{sources.length === 0 && !adding ? <EmptyState title="El radar todavía no recibe señales" text="Añade la primera búsqueda o canal que quieras vigilar." /> : grouped.filter((group) => group.items.length).map((group) => <div key={group.tipo} style={{ marginBottom: 24 }}><div className="rdo-section-index" style={{ margin: "0 0 8px 2px" }}>{group.tipo}</div><div className="rdo-collection">{group.items.map((source) => <div className="rdo-collection-row" key={source.id}><span className="rdo-row-icon"><Search size={15} /></span><span className="rdo-row-main"><span className="rdo-row-title">{source.termino}</span><span className="rdo-row-note">{source.notas || "Sin notas adicionales"}</span></span><span className="rdo-row-end"><Badge tone={source.frecuencia === "Diaria" ? "signal" : source.frecuencia === "Semanal" ? "amber" : ""}>{source.frecuencia}</Badge><IconButton title="Eliminar fuente" testId={`button-delete-source-${source.id}`} onClick={() => window.confirm("¿Eliminar esta fuente?") && setSources(sources.filter((item) => item.id !== source.id))}><Trash2 size={15} /></IconButton></span></div>)}</div></div>)}</div>
+      <div style={{ marginTop: adding ? 14 : 0 }}>{sources.length === 0 && !adding ? <EmptyState title="El radar todavía no recibe señales" text="Añade la primera búsqueda o canal que quieras vigilar." /> : grouped.filter((group) => group.items.length).map((group) => <div key={group.tipo} style={{ marginBottom: 24 }}><div className="rdo-section-index" style={{ margin: "0 0 8px 2px" }}>{group.tipo}</div><div className="rdo-collection">{group.items.map((source) => <Panel key={source.id} pad={false}><button className="rdo-collection-row rdo-source-row" onClick={() => setExpandedId(expandedId === source.id ? null : source.id)}><span className="rdo-row-icon">{source.connector === "rss" ? <Rss size={15} /> : <Search size={15} />}</span><span className="rdo-row-main"><span className="rdo-row-title">{source.termino}</span><span className="rdo-row-note">{source.endpoint_url || source.notas || "Monitorización manual"}</span></span><span className="rdo-row-end"><Badge tone={source.enabled ? "teal" : ""}>{source.enabled ? "Activa" : "Manual"}</Badge><Badge tone={source.frecuencia === "Diaria" ? "signal" : source.frecuencia === "Semanal" ? "amber" : ""}>{source.frecuencia}</Badge><ChevronDown size={16} style={{ transform: expandedId === source.id ? "rotate(180deg)" : "none" }} /></span></button>{expandedId === source.id && <div className="rdo-source-config"><div className="rdo-form-grid"><Field label="Conector"><select className="rdo-control" value={source.connector || "manual"} onChange={(event) => update(source.id, { connector: event.target.value, enabled: event.target.value === "manual" ? false : source.enabled })}><option value="manual">Manual</option><option value="rss">RSS / Atom</option><option value="json_api">API JSON pública</option><option value="web">Página web pública</option></select></Field><Field label="Frecuencia"><select className="rdo-control" value={source.frecuencia} onChange={(event) => update(source.id, { frecuencia: event.target.value })}>{FRECUENCIAS.map((frequency) => <option key={frequency}>{frequency}</option>)}</select></Field><Field label="Endpoint público" full><input className="rdo-control" placeholder="https://…" value={source.endpoint_url || ""} onChange={(event) => update(source.id, { endpoint_url: event.target.value, enabled: event.target.value.trim() ? source.enabled : false })} /></Field><Field label="Competidor relacionado"><select className="rdo-control" value={source.competitor_id || ""} onChange={(event) => update(source.id, { competitor_id: event.target.value || null })}><option value="">Detección automática</option>{competitors.map((competitor) => <option key={competitor.id} value={competitor.id}>{competitor.nombre}</option>)}</select></Field><Field label="Estado"><label className="rdo-toggle"><input type="checkbox" checked={Boolean(source.enabled)} disabled={(source.connector || "manual") === "manual" || !(source.endpoint_url || "").trim()} onChange={(event) => update(source.id, { enabled: event.target.checked })} /><span>{source.enabled ? "Monitorización habilitada" : "Monitorización pausada"}</span></label></Field></div><div className="rdo-form-actions" style={{ justifyContent: "space-between" }}><button className="rdo-button danger" onClick={() => window.confirm("¿Eliminar esta fuente y su historial?") && onRemove(source.id)}><Trash2 size={14} /> Eliminar</button><button className="rdo-button secondary" onClick={() => setExpandedId(null)}>Cerrar</button></div></div>}</Panel>)}</div></div>)}</div>
     </>
   );
 }
 
-function CompetidoresTab({ competitors, setCompetitors, expandedId, setExpandedId }) {
+function MonitorizacionTab({ status, loading, error, runningSource, onRefresh, onRun, onConfigure }) {
+  const summary = status?.summary;
+  const enabled = status?.sources?.filter((source) => source.enabled) || [];
+  return (
+    <>
+      <PageIntro eyebrow="05 / escucha continua" title="Monitorización automática" description="Seguimiento seguro de feeds RSS, APIs JSON y páginas web públicas, con evidencias y detección de cambios." action={<><button className="rdo-button secondary" onClick={onRefresh} disabled={loading}><RefreshCw size={14} className={loading ? "rdo-spin" : ""} /> Actualizar</button><button className="rdo-button primary" onClick={() => onRun()} disabled={!enabled.length || Boolean(runningSource)}><Play size={14} /> {runningSource === "all" ? "Ejecutando…" : "Ejecutar activas"}</button></>} />
+      {error && <div className="rdo-monitor-error"><AlertTriangle size={16} /><span>{error}</span></div>}
+      {!status && loading ? <Panel><div className="rdo-monitor-loading"><RefreshCw size={18} className="rdo-spin" /> Consultando fuentes…</div></Panel> : status && <>
+        <div className="rdo-stat-grid">
+          <Stat label="Fuentes activas" value={summary.enabled_sources} meta={`${summary.total_sources} configuradas`} icon={Activity} />
+          <Stat label="Saludables" value={summary.healthy_sources} meta="última ejecución correcta" icon={CheckCircle2} />
+          <Stat label="Con error" value={summary.error_sources} meta="requieren revisión" icon={AlertTriangle} />
+          <Stat label="Cambios recientes" value={status.recent_changes.length} meta="últimos eventos registrados" icon={History} />
+        </div>
+        <div className="rdo-monitor-grid">
+          <Panel>
+            <SectionHead index="FUENTES" title="Estado de conectores" description="El scheduler respeta la frecuencia de cada fuente y reintenta con backoff ante fallos temporales." action={<button className="rdo-button ghost" onClick={onConfigure}>Configurar</button>} />
+            {!status.sources.length ? <EmptyState title="No hay fuentes" text="Configura la primera fuente antes de activar la escucha." /> : <div className="rdo-monitor-sources">{status.sources.map((source) => <div className="rdo-monitor-source" key={source.source_id}><span className={`rdo-health-dot ${source.last_status}`} /><div className="rdo-row-main"><div className="rdo-row-title">{source.source_label}</div><div className="rdo-row-note">{source.enabled ? `${connectorLabel(source.connector)} · próxima ${formatDate(source.next_run_at)}` : "Pausada"}</div>{source.last_error && <div className="rdo-source-error">{source.last_error}</div>}</div><div className="rdo-row-end"><Badge tone={statusTone(source.last_status)}>{statusLabel(source.last_status)}</Badge><button className="rdo-icon-button rdo-run-button" title="Ejecutar ahora" disabled={source.connector === "manual" || !source.endpoint_url || Boolean(runningSource)} onClick={() => onRun(source.source_id)}>{runningSource === source.source_id ? <RefreshCw size={14} className="rdo-spin" /> : <Play size={14} />}</button></div></div>)}</div>}
+          </Panel>
+          <Panel>
+            <SectionHead index="CAMBIOS" title="Señales detectadas" description="Cada evento enlaza con la evidencia que originó el cambio." />
+            {!status.recent_changes.length ? <EmptyState title="Sin cambios todavía" text="La primera ejecución creará una línea base de evidencias." /> : <div className="rdo-event-list">{status.recent_changes.slice(0, 8).map((event) => <EventRow key={event.id} event={event} />)}</div>}
+          </Panel>
+        </div>
+        <Panel className="rdo-runs-panel">
+          <SectionHead index="EJECUCIONES" title="Actividad reciente" description={`Última ejecución: ${formatDate(summary.last_run_at)} · próxima programada: ${formatDate(summary.next_run_at)}`} />
+          {!status.recent_runs.length ? <EmptyState title="Sin ejecuciones" text="Activa un conector o ejecútalo manualmente para empezar." /> : <div className="rdo-table-wrap"><table className="rdo-table"><thead><tr><th>Fuente</th><th>Inicio</th><th>Estado</th><th>Intentos</th><th>Elementos</th><th>Cambios</th><th>Duración</th></tr></thead><tbody>{status.recent_runs.map((run) => <tr key={run.id}><td><strong>{run.source_label}</strong><div className="rdo-row-note">{run.trigger === "scheduler" ? "Scheduler" : "Manual"}</div></td><td>{formatDate(run.started_at)}</td><td><Badge tone={statusTone(run.status)}>{statusLabel(run.status)}</Badge></td><td>{run.attempts}</td><td>{run.item_count}</td><td>{run.change_count}</td><td>{run.duration_ms == null ? "—" : `${run.duration_ms} ms`}</td></tr>)}</tbody></table></div>}
+        </Panel>
+      </>}
+    </>
+  );
+}
+
+function HistorialTab({ events, competitors, loading, error, onRefresh }) {
+  const [competitorId, setCompetitorId] = useState("");
+  const visible = competitorId ? events.filter((event) => event.competitor_id === competitorId) : events;
+  return (
+    <>
+      <PageIntro eyebrow="06 / memoria competitiva" title="Historial por competidor" description="Cronología verificable de señales nuevas y contenidos actualizados, vinculada a cada competidor cuando existe coincidencia." action={<button className="rdo-button secondary" onClick={onRefresh} disabled={loading}><RefreshCw size={14} className={loading ? "rdo-spin" : ""} /> Actualizar</button>} />
+      {error && <div className="rdo-monitor-error"><AlertTriangle size={16} /><span>{error}</span></div>}
+      <Panel>
+        <div className="rdo-history-toolbar"><Field label="Filtrar por competidor"><select className="rdo-control" value={competitorId} onChange={(event) => setCompetitorId(event.target.value)}><option value="">Todos los competidores</option>{competitors.map((competitor) => <option value={competitor.id} key={competitor.id}>{competitor.nombre}</option>)}</select></Field><div className="rdo-history-count"><strong>{visible.length}</strong><span>eventos visibles</span></div></div>
+        {loading && !events.length ? <div className="rdo-monitor-loading"><RefreshCw size={18} className="rdo-spin" /> Cargando historial…</div> : !visible.length ? <EmptyState title="No hay eventos para este filtro" text="Los cambios aparecerán después de ejecutar una fuente configurada." /> : <div className="rdo-event-list rdo-history-list">{visible.map((event) => <EventRow key={event.id} event={event} detailed />)}</div>}
+      </Panel>
+    </>
+  );
+}
+
+function EventRow({ event, detailed = false }) {
+  return <article className="rdo-event"><span className={`rdo-event-mark ${event.change_type}`}><CircleDot size={14} /></span><div className="rdo-row-main"><div className="rdo-event-meta"><Badge tone={event.change_type === "new" ? "signal" : "amber"}>{event.change_type === "new" ? "Nuevo" : "Actualizado"}</Badge><span>{formatDate(event.occurred_at)}</span></div><div className="rdo-event-title">{event.title || "Cambio detectado"}</div>{detailed && event.summary && <p>{event.summary}</p>}<div className="rdo-event-source">{event.source_label}{event.competitor_name ? ` · ${event.competitor_name}` : ""}</div></div>{event.url && <a className="rdo-icon-button" href={event.url} target="_blank" rel="noreferrer" title="Abrir evidencia"><ExternalLink size={15} /></a>}</article>;
+}
+
+function connectorLabel(connector) {
+  return { rss: "RSS / Atom", json_api: "API JSON", web: "Web pública", manual: "Manual" }[connector] || connector;
+}
+function statusLabel(status) {
+  return { idle: "Sin ejecutar", running: "En curso", success: "Correcta", error: "Error" }[status] || status;
+}
+function statusTone(status) {
+  return status === "success" ? "teal" : status === "error" ? "red" : status === "running" ? "signal" : "";
+}
+function formatDate(value) {
+  if (!value) return "sin fecha";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "sin fecha" : new Intl.DateTimeFormat("es-ES", { dateStyle: "short", timeStyle: "short" }).format(date);
+}
+
+function CompetidoresTab({ competitors, setCompetitors, expandedId, setExpandedId, onRemove }) {
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState(emptyCompetitor());
   const saveNew = () => { if (!draft.nombre.trim()) return; setCompetitors([...competitors, draft]); setAdding(false); setDraft(emptyCompetitor()); };
   const update = (id, patch) => setCompetitors(competitors.map((competitor) => competitor.id === id ? { ...competitor, ...patch } : competitor));
-  const remove = (id) => { if (!window.confirm("¿Eliminar esta ficha del mapa?")) return; setCompetitors(competitors.filter((competitor) => competitor.id !== id)); if (expandedId === id) setExpandedId(null); };
+  const remove = (id) => { if (!window.confirm("¿Eliminar esta ficha del mapa?")) return; void onRemove(id); };
   return (
     <>
       <PageIntro eyebrow="02 / mapa competitivo" title="Competidores" description={`Fichas de empresas de casas modulares a seguir. El objetivo inicial es construir un mapa de ${TARGET_COMPETITORS} actores.`} action={!adding && <AddButton onClick={() => { setDraft(emptyCompetitor()); setAdding(true); }} label="Añadir competidor" />} />

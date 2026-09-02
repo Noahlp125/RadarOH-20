@@ -20,6 +20,10 @@ export const HealthCheckResponse = zod.object({
 /**
  * @summary Read the RadarOH workspace
  */
+export const getRadarStateResponseSourcesItemConsecutiveFailuresMin = 0;
+
+
+
 export const GetRadarStateResponse = zod.object({
   "workspaceId": zod.string(),
   "sources": zod.array(zod.object({
@@ -27,7 +31,16 @@ export const GetRadarStateResponse = zod.object({
   "termino": zod.string(),
   "tipo": zod.string(),
   "frecuencia": zod.string(),
-  "notas": zod.string()
+  "notas": zod.string(),
+  "connector": zod.enum(['manual', 'rss', 'json_api', 'web']),
+  "endpoint_url": zod.string(),
+  "enabled": zod.boolean(),
+  "competitor_id": zod.string().nullable(),
+  "last_run_at": zod.string().nullish(),
+  "next_run_at": zod.string().nullish(),
+  "last_status": zod.enum(['idle', 'running', 'success', 'error']),
+  "last_error": zod.string(),
+  "consecutive_failures": zod.number().min(getRadarStateResponseSourcesItemConsecutiveFailuresMin)
 })),
   "competitors": zod.array(zod.object({
   "id": zod.string(),
@@ -79,7 +92,11 @@ export const ReplaceRadarStateBody = zod.object({
   "termino": zod.string(),
   "tipo": zod.string(),
   "frecuencia": zod.string(),
-  "notas": zod.string()
+  "notas": zod.string(),
+  "connector": zod.enum(['manual', 'rss', 'json_api', 'web']).optional(),
+  "endpoint_url": zod.string().optional(),
+  "enabled": zod.boolean().optional(),
+  "competitor_id": zod.string().nullish()
 })),
   "competitors": zod.array(zod.object({
   "id": zod.string().optional(),
@@ -121,6 +138,10 @@ export const ReplaceRadarStateBody = zod.object({
 })
 })
 
+export const replaceRadarStateResponseSourcesItemConsecutiveFailuresMin = 0;
+
+
+
 export const ReplaceRadarStateResponse = zod.object({
   "workspaceId": zod.string(),
   "sources": zod.array(zod.object({
@@ -128,7 +149,16 @@ export const ReplaceRadarStateResponse = zod.object({
   "termino": zod.string(),
   "tipo": zod.string(),
   "frecuencia": zod.string(),
-  "notas": zod.string()
+  "notas": zod.string(),
+  "connector": zod.enum(['manual', 'rss', 'json_api', 'web']),
+  "endpoint_url": zod.string(),
+  "enabled": zod.boolean(),
+  "competitor_id": zod.string().nullable(),
+  "last_run_at": zod.string().nullish(),
+  "next_run_at": zod.string().nullish(),
+  "last_status": zod.enum(['idle', 'running', 'success', 'error']),
+  "last_error": zod.string(),
+  "consecutive_failures": zod.number().min(replaceRadarStateResponseSourcesItemConsecutiveFailuresMin)
 })),
   "competitors": zod.array(zod.object({
   "id": zod.string(),
@@ -182,7 +212,11 @@ export const ImportRadarDataBody = zod.object({
   "termino": zod.string(),
   "tipo": zod.string(),
   "frecuencia": zod.string(),
-  "notas": zod.string()
+  "notas": zod.string(),
+  "connector": zod.enum(['manual', 'rss', 'json_api', 'web']).optional(),
+  "endpoint_url": zod.string().optional(),
+  "enabled": zod.boolean().optional(),
+  "competitor_id": zod.string().nullish()
 })).optional(),
   "competitors": zod.array(zod.object({
   "id": zod.string().optional(),
@@ -226,6 +260,10 @@ export const ImportRadarDataBody = zod.object({
 })
 })
 
+export const importRadarDataResponseStateSourcesItemConsecutiveFailuresMin = 0;
+
+
+
 export const ImportRadarDataResponse = zod.object({
   "importId": zod.string(),
   "state": zod.object({
@@ -235,7 +273,16 @@ export const ImportRadarDataResponse = zod.object({
   "termino": zod.string(),
   "tipo": zod.string(),
   "frecuencia": zod.string(),
-  "notas": zod.string()
+  "notas": zod.string(),
+  "connector": zod.enum(['manual', 'rss', 'json_api', 'web']),
+  "endpoint_url": zod.string(),
+  "enabled": zod.boolean(),
+  "competitor_id": zod.string().nullable(),
+  "last_run_at": zod.string().nullish(),
+  "next_run_at": zod.string().nullish(),
+  "last_status": zod.enum(['idle', 'running', 'success', 'error']),
+  "last_error": zod.string(),
+  "consecutive_failures": zod.number().min(importRadarDataResponseStateSourcesItemConsecutiveFailuresMin)
 })),
   "competitors": zod.array(zod.object({
   "id": zod.string(),
@@ -293,15 +340,32 @@ export const CreateRadarSourceBody = zod.object({
   "termino": zod.string(),
   "tipo": zod.string(),
   "frecuencia": zod.string(),
-  "notas": zod.string()
+  "notas": zod.string(),
+  "connector": zod.enum(['manual', 'rss', 'json_api', 'web']).optional(),
+  "endpoint_url": zod.string().optional(),
+  "enabled": zod.boolean().optional(),
+  "competitor_id": zod.string().nullish()
 })
+
+export const createRadarSourceResponseConsecutiveFailuresMin = 0;
+
+
 
 export const CreateRadarSourceResponse = zod.object({
   "id": zod.string(),
   "termino": zod.string(),
   "tipo": zod.string(),
   "frecuencia": zod.string(),
-  "notas": zod.string()
+  "notas": zod.string(),
+  "connector": zod.enum(['manual', 'rss', 'json_api', 'web']),
+  "endpoint_url": zod.string(),
+  "enabled": zod.boolean(),
+  "competitor_id": zod.string().nullable(),
+  "last_run_at": zod.string().nullish(),
+  "next_run_at": zod.string().nullish(),
+  "last_status": zod.enum(['idle', 'running', 'success', 'error']),
+  "last_error": zod.string(),
+  "consecutive_failures": zod.number().min(createRadarSourceResponseConsecutiveFailuresMin)
 })
 
 
@@ -319,15 +383,32 @@ export const UpdateRadarSourceBody = zod.object({
   "termino": zod.string().optional(),
   "tipo": zod.string().optional(),
   "frecuencia": zod.string().optional(),
-  "notas": zod.string().optional()
+  "notas": zod.string().optional(),
+  "connector": zod.enum(['manual', 'rss', 'json_api', 'web']).optional(),
+  "endpoint_url": zod.string().optional(),
+  "enabled": zod.boolean().optional(),
+  "competitor_id": zod.string().nullish()
 })
+
+export const updateRadarSourceResponseConsecutiveFailuresMin = 0;
+
+
 
 export const UpdateRadarSourceResponse = zod.object({
   "id": zod.string(),
   "termino": zod.string(),
   "tipo": zod.string(),
   "frecuencia": zod.string(),
-  "notas": zod.string()
+  "notas": zod.string(),
+  "connector": zod.enum(['manual', 'rss', 'json_api', 'web']),
+  "endpoint_url": zod.string(),
+  "enabled": zod.boolean(),
+  "competitor_id": zod.string().nullable(),
+  "last_run_at": zod.string().nullish(),
+  "next_run_at": zod.string().nullish(),
+  "last_status": zod.enum(['idle', 'running', 'success', 'error']),
+  "last_error": zod.string(),
+  "consecutive_failures": zod.number().min(updateRadarSourceResponseConsecutiveFailuresMin)
 })
 
 
@@ -488,3 +569,162 @@ export const DeleteRadarKeywordParams = zod.object({
 })
 
 export const DeleteRadarKeywordResponse = zod.void()
+
+
+/**
+ * @summary Read monitoring status, recent runs and changes
+ */
+export const getRadarMonitorStatusResponseSummaryTotalSourcesMin = 0;
+
+export const getRadarMonitorStatusResponseSummaryEnabledSourcesMin = 0;
+
+export const getRadarMonitorStatusResponseSummaryHealthySourcesMin = 0;
+
+export const getRadarMonitorStatusResponseSummaryErrorSourcesMin = 0;
+
+export const getRadarMonitorStatusResponseSourcesItemConsecutiveFailuresMin = 0;
+
+export const getRadarMonitorStatusResponseRecentRunsItemAttemptsMin = 0;
+
+export const getRadarMonitorStatusResponseRecentRunsItemItemCountMin = 0;
+
+export const getRadarMonitorStatusResponseRecentRunsItemChangeCountMin = 0;
+
+
+
+export const GetRadarMonitorStatusResponse = zod.object({
+  "summary": zod.object({
+  "total_sources": zod.number().min(getRadarMonitorStatusResponseSummaryTotalSourcesMin),
+  "enabled_sources": zod.number().min(getRadarMonitorStatusResponseSummaryEnabledSourcesMin),
+  "healthy_sources": zod.number().min(getRadarMonitorStatusResponseSummaryHealthySourcesMin),
+  "error_sources": zod.number().min(getRadarMonitorStatusResponseSummaryErrorSourcesMin),
+  "last_run_at": zod.string().nullable(),
+  "next_run_at": zod.string().nullable()
+}),
+  "sources": zod.array(zod.object({
+  "source_id": zod.string(),
+  "source_label": zod.string(),
+  "connector": zod.enum(['manual', 'rss', 'json_api', 'web']),
+  "endpoint_url": zod.string(),
+  "enabled": zod.boolean(),
+  "last_status": zod.enum(['idle', 'running', 'success', 'error']),
+  "last_run_at": zod.string().nullable(),
+  "next_run_at": zod.string().nullable(),
+  "last_error": zod.string(),
+  "consecutive_failures": zod.number().min(getRadarMonitorStatusResponseSourcesItemConsecutiveFailuresMin)
+})),
+  "recent_runs": zod.array(zod.object({
+  "id": zod.string(),
+  "source_id": zod.string(),
+  "source_label": zod.string(),
+  "trigger": zod.enum(['scheduler', 'manual', 'retry']),
+  "status": zod.enum(['running', 'success', 'error']),
+  "started_at": zod.string(),
+  "finished_at": zod.string().nullable(),
+  "attempts": zod.number().min(getRadarMonitorStatusResponseRecentRunsItemAttemptsMin),
+  "item_count": zod.number().min(getRadarMonitorStatusResponseRecentRunsItemItemCountMin),
+  "change_count": zod.number().min(getRadarMonitorStatusResponseRecentRunsItemChangeCountMin),
+  "http_status": zod.number().nullable(),
+  "error_message": zod.string(),
+  "duration_ms": zod.number().nullable()
+})),
+  "recent_changes": zod.array(zod.object({
+  "id": zod.string(),
+  "source_id": zod.string(),
+  "source_label": zod.string(),
+  "run_id": zod.string(),
+  "evidence_id": zod.string(),
+  "competitor_id": zod.string().nullable(),
+  "competitor_name": zod.string().nullable(),
+  "change_type": zod.enum(['new', 'updated']),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "url": zod.string(),
+  "previous_fingerprint": zod.string().nullable(),
+  "fingerprint": zod.string(),
+  "occurred_at": zod.string()
+}))
+})
+
+
+/**
+ * @summary Run one source or all configured sources now
+ */
+export const RunRadarMonitorBody = zod.object({
+  "source_id": zod.string().optional()
+})
+
+export const runRadarMonitorResponseRunsItemAttemptsMin = 0;
+
+export const runRadarMonitorResponseRunsItemItemCountMin = 0;
+
+export const runRadarMonitorResponseRunsItemChangeCountMin = 0;
+
+
+
+export const RunRadarMonitorResponse = zod.object({
+  "runs": zod.array(zod.object({
+  "id": zod.string(),
+  "source_id": zod.string(),
+  "source_label": zod.string(),
+  "trigger": zod.enum(['scheduler', 'manual', 'retry']),
+  "status": zod.enum(['running', 'success', 'error']),
+  "started_at": zod.string(),
+  "finished_at": zod.string().nullable(),
+  "attempts": zod.number().min(runRadarMonitorResponseRunsItemAttemptsMin),
+  "item_count": zod.number().min(runRadarMonitorResponseRunsItemItemCountMin),
+  "change_count": zod.number().min(runRadarMonitorResponseRunsItemChangeCountMin),
+  "http_status": zod.number().nullable(),
+  "error_message": zod.string(),
+  "duration_ms": zod.number().nullable()
+})),
+  "changes": zod.array(zod.object({
+  "id": zod.string(),
+  "source_id": zod.string(),
+  "source_label": zod.string(),
+  "run_id": zod.string(),
+  "evidence_id": zod.string(),
+  "competitor_id": zod.string().nullable(),
+  "competitor_name": zod.string().nullable(),
+  "change_type": zod.enum(['new', 'updated']),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "url": zod.string(),
+  "previous_fingerprint": zod.string().nullable(),
+  "fingerprint": zod.string(),
+  "occurred_at": zod.string()
+}))
+})
+
+
+/**
+ * @summary Read change history, optionally filtered by competitor
+ */
+export const getRadarMonitorHistoryQueryLimitMax = 100;
+
+
+
+export const GetRadarMonitorHistoryQueryParams = zod.object({
+  "competitor_id": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().min(1).max(getRadarMonitorHistoryQueryLimitMax).optional()
+})
+
+export const GetRadarMonitorHistoryResponseItem = zod.object({
+  "id": zod.string(),
+  "source_id": zod.string(),
+  "source_label": zod.string(),
+  "run_id": zod.string(),
+  "evidence_id": zod.string(),
+  "competitor_id": zod.string().nullable(),
+  "competitor_name": zod.string().nullable(),
+  "change_type": zod.enum(['new', 'updated']),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "url": zod.string(),
+  "previous_fingerprint": zod.string().nullable(),
+  "fingerprint": zod.string(),
+  "occurred_at": zod.string()
+})
+export const GetRadarMonitorHistoryResponse = zod.array(GetRadarMonitorHistoryResponseItem)
+
+

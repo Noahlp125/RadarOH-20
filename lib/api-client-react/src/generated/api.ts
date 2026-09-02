@@ -20,8 +20,10 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  GetRadarMonitorHistoryParams,
   HealthStatus,
   NotFoundResponse,
+  RadarChangeEvent,
   RadarCompetitor,
   RadarCompetitorInput,
   RadarCompetitorUpdate,
@@ -30,6 +32,9 @@ import type {
   RadarKeyword,
   RadarKeywordInput,
   RadarKeywordUpdate,
+  RadarMonitorRunRequest,
+  RadarMonitorRunResult,
+  RadarMonitorStatus,
   RadarSource,
   RadarSourceInput,
   RadarSourceUpdate,
@@ -98,6 +103,8 @@ export const getHealthCheckQueryKey = () => {
     `/api/healthz`
     ] as const;
     }
+
+
 export const getHealthCheckQueryOptions = <TData = Awaited<ReturnType<typeof healthCheck>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
@@ -173,7 +180,7 @@ export const getGetRadarStateQueryKey = () => {
     `/api/radar/state`
     ] as const;
     }
-// End of generated file
+
 
 export const getGetRadarStateQueryOptions = <TData = Awaited<ReturnType<typeof getRadarState>>, TError = ErrorType<ServerErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
@@ -1002,4 +1009,236 @@ export const useDeleteRadarKeyword = <TError = ErrorType<ValidationErrorResponse
       > => {
       return useMutation(getDeleteRadarKeywordMutationOptions(options));
     }
-// End of generated file
+
+export const getGetRadarMonitorStatusUrl = () => {
+
+
+
+
+  return `/api/radar/monitor/status`
+}
+
+/**
+ * @summary Read monitoring status, recent runs and changes
+ */
+export const getRadarMonitorStatus = async ( options?: Parameters<typeof customFetch>[1]): Promise<RadarMonitorStatus> => {
+
+  return customFetch<RadarMonitorStatus>(getGetRadarMonitorStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRadarMonitorStatusQueryKey = () => {
+    return [
+    `/api/radar/monitor/status`
+    ] as const;
+    }
+
+
+export const getGetRadarMonitorStatusQueryOptions = <TData = Awaited<ReturnType<typeof getRadarMonitorStatus>>, TError = ErrorType<ServerErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarMonitorStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRadarMonitorStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRadarMonitorStatus>>> = ({ signal }) => getRadarMonitorStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRadarMonitorStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRadarMonitorStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getRadarMonitorStatus>>>
+export type GetRadarMonitorStatusQueryError = ErrorType<ServerErrorResponse>
+
+
+/**
+ * @summary Read monitoring status, recent runs and changes
+ */
+
+export function useGetRadarMonitorStatus<TData = Awaited<ReturnType<typeof getRadarMonitorStatus>>, TError = ErrorType<ServerErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarMonitorStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRadarMonitorStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRunRadarMonitorUrl = () => {
+
+
+
+
+  return `/api/radar/monitor/run`
+}
+
+/**
+ * @summary Run one source or all configured sources now
+ */
+export const runRadarMonitor = async (radarMonitorRunRequest?: RadarMonitorRunRequest, options?: Parameters<typeof customFetch>[1]): Promise<RadarMonitorRunResult> => {
+
+  return customFetch<RadarMonitorRunResult>(getRunRadarMonitorUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(radarMonitorRunRequest)
+  }
+);}
+
+
+
+
+
+export const getRunRadarMonitorMutationOptions = <TError = ErrorType<ValidationErrorResponse | NotFoundResponse | ServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runRadarMonitor>>, TError,{data?: BodyType<RadarMonitorRunRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runRadarMonitor>>, TError,{data?: BodyType<RadarMonitorRunRequest>}, TContext> => {
+
+const mutationKey = ['runRadarMonitor'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runRadarMonitor>>, {data?: BodyType<RadarMonitorRunRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  runRadarMonitor(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunRadarMonitorMutationResult = NonNullable<Awaited<ReturnType<typeof runRadarMonitor>>>
+    export type RunRadarMonitorMutationBody = BodyType<RadarMonitorRunRequest> | undefined
+    export type RunRadarMonitorMutationError = ErrorType<ValidationErrorResponse | NotFoundResponse | ServerErrorResponse>
+
+    /**
+ * @summary Run one source or all configured sources now
+ */
+export const useRunRadarMonitor = <TError = ErrorType<ValidationErrorResponse | NotFoundResponse | ServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runRadarMonitor>>, TError,{data?: BodyType<RadarMonitorRunRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runRadarMonitor>>,
+        TError,
+        {data?: BodyType<RadarMonitorRunRequest>},
+        TContext
+      > => {
+      return useMutation(getRunRadarMonitorMutationOptions(options));
+    }
+
+export const getGetRadarMonitorHistoryUrl = (params?: GetRadarMonitorHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/radar/monitor/history?${stringifiedParams}` : `/api/radar/monitor/history`
+}
+
+/**
+ * @summary Read change history, optionally filtered by competitor
+ */
+export const getRadarMonitorHistory = async (params?: GetRadarMonitorHistoryParams, options?: Parameters<typeof customFetch>[1]): Promise<RadarChangeEvent[]> => {
+
+  return customFetch<RadarChangeEvent[]>(getGetRadarMonitorHistoryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRadarMonitorHistoryQueryKey = (params?: GetRadarMonitorHistoryParams,) => {
+    return [
+    `/api/radar/monitor/history`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRadarMonitorHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getRadarMonitorHistory>>, TError = ErrorType<ServerErrorResponse>>(params?: GetRadarMonitorHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarMonitorHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRadarMonitorHistoryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRadarMonitorHistory>>> = ({ signal }) => getRadarMonitorHistory(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRadarMonitorHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRadarMonitorHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getRadarMonitorHistory>>>
+export type GetRadarMonitorHistoryQueryError = ErrorType<ServerErrorResponse>
+
+
+/**
+ * @summary Read change history, optionally filtered by competitor
+ */
+
+export function useGetRadarMonitorHistory<TData = Awaited<ReturnType<typeof getRadarMonitorHistory>>, TError = ErrorType<ServerErrorResponse>>(
+ params?: GetRadarMonitorHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarMonitorHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRadarMonitorHistoryQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+

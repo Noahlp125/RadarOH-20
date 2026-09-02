@@ -13,14 +13,54 @@ export interface ErrorResponse {
   error: string;
 }
 
+export type RadarSourceConnector = typeof RadarSourceConnector[keyof typeof RadarSourceConnector];
+
+
+export const RadarSourceConnector = {
+  manual: 'manual',
+  rss: 'rss',
+  json_api: 'json_api',
+  web: 'web',
+} as const;
+
+export type RadarSourceLastStatus = typeof RadarSourceLastStatus[keyof typeof RadarSourceLastStatus];
+
+
+export const RadarSourceLastStatus = {
+  idle: 'idle',
+  running: 'running',
+  success: 'success',
+  error: 'error',
+} as const;
+
 export interface RadarSource {
   id: string;
   termino: string;
   tipo: string;
   frecuencia: string;
   notas: string;
+  connector: RadarSourceConnector;
+  endpoint_url: string;
+  enabled: boolean;
+  competitor_id: string | null;
+  last_run_at?: string | null;
+  next_run_at?: string | null;
+  last_status: RadarSourceLastStatus;
+  last_error: string;
+  /** @minimum 0 */
+  consecutive_failures: number;
   [key: string]: unknown;
  }
+
+export type RadarSourceInputConnector = typeof RadarSourceInputConnector[keyof typeof RadarSourceInputConnector];
+
+
+export const RadarSourceInputConnector = {
+  manual: 'manual',
+  rss: 'rss',
+  json_api: 'json_api',
+  web: 'web',
+} as const;
 
 export interface RadarSourceInput {
   id?: string;
@@ -28,14 +68,32 @@ export interface RadarSourceInput {
   tipo: string;
   frecuencia: string;
   notas: string;
+  connector?: RadarSourceInputConnector;
+  endpoint_url?: string;
+  enabled?: boolean;
+  competitor_id?: string | null;
   [key: string]: unknown;
  }
+
+export type RadarSourceUpdateConnector = typeof RadarSourceUpdateConnector[keyof typeof RadarSourceUpdateConnector];
+
+
+export const RadarSourceUpdateConnector = {
+  manual: 'manual',
+  rss: 'rss',
+  json_api: 'json_api',
+  web: 'web',
+} as const;
 
 export interface RadarSourceUpdate {
   termino?: string;
   tipo?: string;
   frecuencia?: string;
   notas?: string;
+  connector?: RadarSourceUpdateConnector;
+  endpoint_url?: string;
+  enabled?: boolean;
+  competitor_id?: string | null;
   [key: string]: unknown;
  }
 
@@ -167,6 +225,131 @@ export interface RadarImportResult {
   validation: RadarValidationSummary;
 }
 
+export interface RadarMonitorRunRequest {
+  source_id?: string;
+}
+
+export type RadarMonitorRunTrigger = typeof RadarMonitorRunTrigger[keyof typeof RadarMonitorRunTrigger];
+
+
+export const RadarMonitorRunTrigger = {
+  scheduler: 'scheduler',
+  manual: 'manual',
+  retry: 'retry',
+} as const;
+
+export type RadarMonitorRunStatus = typeof RadarMonitorRunStatus[keyof typeof RadarMonitorRunStatus];
+
+
+export const RadarMonitorRunStatus = {
+  running: 'running',
+  success: 'success',
+  error: 'error',
+} as const;
+
+export interface RadarMonitorRun {
+  id: string;
+  source_id: string;
+  source_label: string;
+  trigger: RadarMonitorRunTrigger;
+  status: RadarMonitorRunStatus;
+  started_at: string;
+  finished_at: string | null;
+  /** @minimum 0 */
+  attempts: number;
+  /** @minimum 0 */
+  item_count: number;
+  /** @minimum 0 */
+  change_count: number;
+  http_status: number | null;
+  error_message: string;
+  duration_ms: number | null;
+}
+
+export type RadarChangeEventChangeType = typeof RadarChangeEventChangeType[keyof typeof RadarChangeEventChangeType];
+
+
+export const RadarChangeEventChangeType = {
+  new: 'new',
+  updated: 'updated',
+} as const;
+
+export interface RadarChangeEvent {
+  id: string;
+  source_id: string;
+  source_label: string;
+  run_id: string;
+  evidence_id: string;
+  competitor_id: string | null;
+  competitor_name: string | null;
+  change_type: RadarChangeEventChangeType;
+  title: string;
+  summary: string;
+  url: string;
+  previous_fingerprint: string | null;
+  fingerprint: string;
+  occurred_at: string;
+}
+
+export type RadarMonitorSourceStatusConnector = typeof RadarMonitorSourceStatusConnector[keyof typeof RadarMonitorSourceStatusConnector];
+
+
+export const RadarMonitorSourceStatusConnector = {
+  manual: 'manual',
+  rss: 'rss',
+  json_api: 'json_api',
+  web: 'web',
+} as const;
+
+export type RadarMonitorSourceStatusLastStatus = typeof RadarMonitorSourceStatusLastStatus[keyof typeof RadarMonitorSourceStatusLastStatus];
+
+
+export const RadarMonitorSourceStatusLastStatus = {
+  idle: 'idle',
+  running: 'running',
+  success: 'success',
+  error: 'error',
+} as const;
+
+export interface RadarMonitorSourceStatus {
+  source_id: string;
+  source_label: string;
+  connector: RadarMonitorSourceStatusConnector;
+  endpoint_url: string;
+  enabled: boolean;
+  last_status: RadarMonitorSourceStatusLastStatus;
+  last_run_at: string | null;
+  next_run_at: string | null;
+  last_error: string;
+  /** @minimum 0 */
+  consecutive_failures: number;
+}
+
+export type RadarMonitorStatusSummary = {
+  /** @minimum 0 */
+  total_sources: number;
+  /** @minimum 0 */
+  enabled_sources: number;
+  /** @minimum 0 */
+  healthy_sources: number;
+  /** @minimum 0 */
+  error_sources: number;
+  last_run_at: string | null;
+  next_run_at: string | null;
+};
+
+export interface RadarMonitorStatus {
+  summary: RadarMonitorStatusSummary;
+  sources: RadarMonitorSourceStatus[];
+  recent_runs: RadarMonitorRun[];
+  recent_changes: RadarChangeEvent[];
+}
+
+export interface RadarMonitorRunResult {
+  runs: RadarMonitorRun[];
+  changes: RadarChangeEvent[];
+}
+
 /**
  * Request validation failed
  */
@@ -181,3 +364,13 @@ export type NotFoundResponse = ErrorResponse;
  * Internal server error
  */
 export type ServerErrorResponse = ErrorResponse;
+
+export type GetRadarMonitorHistoryParams = {
+competitor_id?: string;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
+

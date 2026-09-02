@@ -211,11 +211,44 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .rdo-sync-banner.warning { background:hsl(42 100% 97%); border-color:hsl(39 79% 78%); color:hsl(31 51% 30%); }
 .rdo-sync-dot { background:hsl(15 77% 52%); border-radius:999px; flex:0 0 auto; height:7px; width:7px; }
 .rdo-hidden { display:none; }
+.rdo-source-row { width:100%; border:0; border-radius:9px; text-align:left; cursor:pointer; }
+.rdo-source-config { padding:18px 20px 20px; border-top:1px solid hsl(var(--line)); }
+.rdo-toggle { display:flex; align-items:center; gap:9px; min-height:38px; color:hsl(var(--ink)); font-size:12px; font-weight:700; }
+.rdo-toggle input { accent-color:hsl(var(--signal)); }
+.rdo-monitor-grid { display:grid; grid-template-columns:minmax(0,1.08fr) minmax(320px,.92fr); gap:14px; margin-top:14px; }
+.rdo-monitor-sources, .rdo-event-list { display:flex; flex-direction:column; gap:0; }
+.rdo-monitor-source { display:flex; align-items:flex-start; gap:11px; padding:12px 0; border-bottom:1px solid hsl(var(--line)); }
+.rdo-monitor-source:last-child, .rdo-event:last-child { border-bottom:0; }
+.rdo-health-dot { width:8px; height:8px; margin-top:6px; flex:0 0 auto; border-radius:50%; background:hsl(var(--ink-soft)); }
+.rdo-health-dot.success { background:hsl(var(--teal)); box-shadow:0 0 0 4px hsl(var(--teal-soft)); }
+.rdo-health-dot.error { background:hsl(var(--red)); box-shadow:0 0 0 4px hsl(7 65% 94%); }
+.rdo-health-dot.running { background:hsl(var(--signal)); animation:rdo-pulse 1.4s ease-in-out infinite; }
+.rdo-source-error { margin-top:6px; color:hsl(var(--red)); font-size:10px; line-height:1.4; }
+.rdo-run-button:hover { color:hsl(var(--signal)); background:hsl(var(--signal-soft)); }
+.rdo-run-button:disabled { opacity:.35; cursor:not-allowed; }
+.rdo-monitor-error { display:flex; align-items:flex-start; gap:9px; margin-bottom:14px; padding:11px 13px; border:1px solid hsl(7 65% 82%); border-radius:8px; color:hsl(var(--red)); background:hsl(7 65% 97%); font-size:12px; }
+.rdo-monitor-loading { display:flex; align-items:center; justify-content:center; gap:10px; min-height:120px; color:hsl(var(--ink-muted)); font-size:12px; }
+.rdo-runs-panel { margin-top:14px; }
+.rdo-event { display:flex; align-items:flex-start; gap:11px; padding:13px 0; border-bottom:1px solid hsl(var(--line)); }
+.rdo-event-mark { display:grid; place-items:center; width:28px; height:28px; flex:0 0 auto; border-radius:7px; color:hsl(var(--signal)); background:hsl(var(--signal-soft)); }
+.rdo-event-mark.updated { color:hsl(var(--amber)); background:hsl(var(--amber-soft)); }
+.rdo-event-meta { display:flex; align-items:center; gap:8px; color:hsl(var(--ink-soft)); font-family:"Space Mono",monospace; font-size:9px; }
+.rdo-event-title { margin-top:7px; color:hsl(var(--ink)); font-size:12px; font-weight:700; line-height:1.4; }
+.rdo-event-source { margin-top:4px; color:hsl(var(--ink-muted)); font-size:10px; }
+.rdo-event p { margin:8px 0 0; color:hsl(var(--ink-muted)); font-size:11px; line-height:1.55; }
+.rdo-history-toolbar { display:flex; align-items:end; justify-content:space-between; gap:20px; margin-bottom:14px; padding-bottom:16px; border-bottom:1px solid hsl(var(--line)); }
+.rdo-history-toolbar .rdo-field { width:min(360px,100%); }
+.rdo-history-count { display:flex; align-items:baseline; gap:7px; color:hsl(var(--ink-muted)); font-size:10px; }
+.rdo-history-count strong { color:hsl(var(--ink)); font-family:"Syne",sans-serif; font-size:24px; }
+.rdo-history-list .rdo-event { padding:16px 0; }
+.rdo-spin { animation:rdo-spin .9s linear infinite; }
+@keyframes rdo-spin { to { transform:rotate(360deg); } }
 .rdo-mobile-scrim { position:fixed; inset:0; z-index:9; border:0; background:hsl(var(--shadow) / .35); }
 
 @media (max-width: 920px) {
   .rdo-sidebar { width:214px; }
   .rdo-summary-grid { grid-template-columns:1fr; }
+  .rdo-monitor-grid { grid-template-columns:1fr; }
 }
 @media (max-width: 720px) {
   .rdo-shell { display:block; }
@@ -229,6 +262,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .rdo-page-intro .rdo-actions { margin-top:18px; }
   .rdo-stat-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .rdo-plan-grid { grid-template-columns:1fr; }
+  .rdo-history-toolbar { align-items:stretch; flex-direction:column; }
 }
 @media (max-width: 520px) {
   .rdo-form-grid, .rdo-form-grid.three { grid-template-columns:1fr; }

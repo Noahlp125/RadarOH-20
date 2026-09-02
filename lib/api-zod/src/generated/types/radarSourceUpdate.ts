@@ -5,11 +5,16 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { RadarSourceUpdateConnector } from './radarSourceUpdateConnector';
 
 export interface RadarSourceUpdate {
   termino?: string;
   tipo?: string;
   frecuencia?: string;
   notas?: string;
+  connector?: RadarSourceUpdateConnector;
+  endpoint_url?: string;
+  enabled?: boolean;
+  competitor_id?: string | null;
   [key: string]: unknown;
  }

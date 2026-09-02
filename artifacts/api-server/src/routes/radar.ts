@@ -23,6 +23,11 @@ import {
   CreateRadarSourceResponse,
   CreateRadarCompetitorResponse,
   CreateRadarKeywordResponse,
+  GetRadarMonitorHistoryQueryParams,
+  GetRadarMonitorHistoryResponse,
+  GetRadarMonitorStatusResponse,
+  RunRadarMonitorBody,
+  RunRadarMonitorResponse,
 } from "@workspace/api-zod";
 import {
   createRadarCompetitor,
@@ -38,6 +43,12 @@ import {
   updateRadarKeyword,
   updateRadarSource,
 } from "../lib/radar/repository";
+import {
+  getRadarMonitorHistory,
+  getRadarMonitorStatus,
+  MonitorSourceNotFoundError,
+  runRadarMonitor,
+} from "../lib/radar/monitoring";
 
 const router: IRouter = Router();
 
@@ -238,6 +249,45 @@ router.delete("/radar/keywords/:id", async (req, res): Promise<void> => {
     return;
   }
   res.sendStatus(204);
+});
+
+router.get("/radar/monitor/status", async (_req, res): Promise<void> => {
+  const status = await getRadarMonitorStatus();
+  GetRadarMonitorStatusResponse.parse(status);
+  res.json(status);
+});
+
+router.post("/radar/monitor/run", async (req, res): Promise<void> => {
+  const body = RunRadarMonitorBody.safeParse(req.body ?? {});
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  try {
+    const result = await runRadarMonitor(body.data.source_id);
+    RunRadarMonitorResponse.parse(result);
+    res.json(result);
+  } catch (error) {
+    if (error instanceof MonitorSourceNotFoundError) {
+      res.status(404).json({ error: error.message });
+      return;
+    }
+    validationError(res, error);
+  }
+});
+
+router.get("/radar/monitor/history", async (req, res): Promise<void> => {
+  const query = GetRadarMonitorHistoryQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const history = await getRadarMonitorHistory(
+    query.data.competitor_id,
+    query.data.limit,
+  );
+  GetRadarMonitorHistoryResponse.parse(history);
+  res.json(history);
 });
 
 export default router;
