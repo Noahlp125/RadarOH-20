@@ -91,6 +91,19 @@ async function saveKey(key, value) {
     console.error("No se pudo guardar", key, error);
   }
 }
+const wait = (delayMs) => new Promise((resolve) => window.setTimeout(resolve, delayMs));
+async function fetchRadarStateWithRetry() {
+  let lastError;
+  for (const delayMs of [0, 750, 1500]) {
+    if (delayMs) await wait(delayMs);
+    try {
+      return await fetchRadarState();
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
 const emptyCompetitor = () => ({
   id: uid(),
   nombre: "",
@@ -275,7 +288,7 @@ export default function RadarOH() {
       const hasLocalData = localState.sources.length || localState.competitors.length || localState.keywords.length ||
         HORIZONTES.some((horizon) => localState.plan[horizon]?.length);
       try {
-        const remote = await fetchRadarState();
+        const remote = await fetchRadarStateWithRetry();
         if (!active) return;
         let nextState = {
           sources: remote.sources || [],
@@ -297,21 +310,23 @@ export default function RadarOH() {
         setSyncError("");
       } catch (error) {
         if (!active) return;
-        setSources(localState.sources);
-        setCompetitors(localState.competitors);
-        setKeywords(localState.keywords);
-        setPlan(localState.plan);
-        setSyncStatus("local");
-        setSyncError("La persistencia central no está disponible. Los cambios se guardan temporalmente en este navegador.");
+        setSources([]);
+        setCompetitors([]);
+        setKeywords([]);
+        setPlan({ "30": [], "60": [], "90": [] });
+        setSyncStatus("error");
+        setSyncError(error instanceof Error
+          ? `No se pudo cargar la información central: ${error.message}`
+          : "No se pudo cargar la información central.");
       }
       setLoading(false);
     })();
     return () => { active = false; };
   }, []);
-  useEffect(() => { if (!loading) saveKey(KEYS.sources, sources); }, [sources, loading]);
-  useEffect(() => { if (!loading) saveKey(KEYS.competitors, competitors); }, [competitors, loading]);
-  useEffect(() => { if (!loading) saveKey(KEYS.keywords, keywords); }, [keywords, loading]);
-  useEffect(() => { if (!loading) saveKey(KEYS.plan, plan); }, [plan, loading]);
+  useEffect(() => { if (!loading && syncStatus === "remote") saveKey(KEYS.sources, sources); }, [sources, loading, syncStatus]);
+  useEffect(() => { if (!loading && syncStatus === "remote") saveKey(KEYS.competitors, competitors); }, [competitors, loading, syncStatus]);
+  useEffect(() => { if (!loading && syncStatus === "remote") saveKey(KEYS.keywords, keywords); }, [keywords, loading, syncStatus]);
+  useEffect(() => { if (!loading && syncStatus === "remote") saveKey(KEYS.plan, plan); }, [plan, loading, syncStatus]);
   useEffect(() => {
     if (loading || syncStatus !== "remote") return undefined;
     const timer = window.setTimeout(async () => {
@@ -319,8 +334,8 @@ export default function RadarOH() {
         await saveRadarState({ sources, competitors, keywords, plan });
         setSyncError("");
       } catch {
-        setSyncStatus("local");
-        setSyncError("Se perdió la conexión con PostgreSQL. Los cambios siguen guardados localmente hasta recuperar la conexión.");
+        setSyncStatus("error");
+        setSyncError("Se perdió la conexión con PostgreSQL. Recarga cuando se restablezca antes de seguir editando.");
       }
     }, 350);
     return () => window.clearTimeout(timer);

@@ -81,20 +81,10 @@ export function setReadiness(value: boolean) {
   readinessWaiters.clear();
 }
 export function isReady() { return ready; }
-export function waitForReadiness(timeoutMs = 30_000) {
-  if (ready) return Promise.resolve(true);
-  return new Promise<boolean>((resolve) => {
-    let settled = false;
-    const finish = (value: boolean) => {
-      if (settled) return;
-      settled = true;
-      readinessWaiters.delete(onReady);
-      clearTimeout(timeout);
-      resolve(value);
-    };
-    const onReady = () => finish(true);
-    const timeout = setTimeout(() => finish(false), timeoutMs);
-    readinessWaiters.add(onReady);
+export function waitForReadiness() {
+  if (ready) return Promise.resolve();
+  return new Promise<void>((resolve) => {
+    readinessWaiters.add(resolve);
   });
 }
 export function setWorkerLeader(value: boolean) { workerLeader = value ? 1 : 0; }

@@ -67,13 +67,7 @@ app.use(helmet());
 // Operational endpoints must remain available without Clerk/Radar authorization.
 app.use("/api", healthRouter);
 app.use("/api/radar", async (req, res, next) => {
-  if (!await waitForReadiness()) {
-    res.status(503).json({
-      error: "Servicio temporalmente no disponible",
-      request_id: (req as typeof req & { id?: string }).id,
-    });
-    return;
-  }
+  await waitForReadiness();
   next();
 });
 app.use(
