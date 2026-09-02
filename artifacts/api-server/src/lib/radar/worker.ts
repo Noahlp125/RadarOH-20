@@ -84,7 +84,7 @@ function scheduleWorkerTick() {
 
 async function runWorkerTick() {
   try {
-    const lease = await acquireWorkerLease();
+    const lease = await acquireWorkerLease(workerId);
     if (!lease.leader) {
       if (isLeader) {
         logger.warn({ workerId }, "RadarOH worker leadership lost");
@@ -92,7 +92,7 @@ async function runWorkerTick() {
       isLeader = false;
       return;
     }
-    const recovered = await recoverInterruptedWork();
+    const recovered = await recoverInterruptedWork(workerId);
     if (lease.fresh) {
       logger.info(
         { workerId, ...recovered },
@@ -122,8 +122,7 @@ async function runWorkerTick() {
   }
 }
 
-async function acquireWorkerLease() {
-  const now = new Date();
+async function acquireWorkerLease(ownerId: string, now = new Date()) {
   const expiresAt = new Date(now.getTime() + WORKER_LEASE_MS);
   return withRadarTransaction(async (tx) => {
     const [before] = await tx
@@ -136,7 +135,7 @@ async function acquireWorkerLease() {
       .values({
         id: leaseId,
         workspaceId: RADAR_WORKSPACE_ID,
-        ownerId: workerId,
+        ownerId,
         acquiredAt: now,
         heartbeatAt: now,
         expiresAt,
@@ -146,9 +145,9 @@ async function acquireWorkerLease() {
     const [lease] = await tx
       .update(radarWorkerLeases)
       .set({
-        ownerId: workerId,
+        ownerId,
         acquiredAt:
-          before?.ownerId === workerId && before.expiresAt > now
+          before?.ownerId === ownerId && before.expiresAt > now
             ? before.acquiredAt
             : now,
         heartbeatAt: now,
@@ -158,7 +157,7 @@ async function acquireWorkerLease() {
       .where(and(
         eq(radarWorkerLeases.id, leaseId),
         or(
-          eq(radarWorkerLeases.ownerId, workerId),
+          eq(radarWorkerLeases.ownerId, ownerId),
           lte(radarWorkerLeases.expiresAt, now),
         ),
       ))
@@ -167,7 +166,7 @@ async function acquireWorkerLease() {
       leader: Boolean(lease),
       fresh:
         Boolean(lease) &&
-        (!before || before.ownerId !== workerId || before.expiresAt <= now),
+        (!before || before.ownerId !== ownerId || before.expiresAt <= now),
     };
   });
 }
@@ -204,8 +203,7 @@ async function releaseWorkerLease() {
   );
 }
 
-async function recoverInterruptedWork() {
-  const now = new Date();
+async function recoverInterruptedWork(ownerId: string, now = new Date()) {
   const staleBefore = new Date(now.getTime() - STALE_JOB_MS);
   const staleJobs = await withRadarTransaction((tx) =>
     tx
@@ -214,7 +212,7 @@ async function recoverInterruptedWork() {
       .where(and(
         eq(radarWorkerJobs.workspaceId, RADAR_WORKSPACE_ID),
         eq(radarWorkerJobs.status, "running"),
-        ne(radarWorkerJobs.lockedBy, workerId),
+        ne(radarWorkerJobs.lockedBy, ownerId),
         lte(radarWorkerJobs.lockedAt, staleBefore),
       )),
   );
@@ -301,6 +299,24 @@ async function recoverInterruptedWork() {
   }
   return { recoveredJobs, recoveredMonitorRuns, recoveredAiAnalyses };
 }
+
+export const radarWorkerTestHarness = {
+  acquireLease(ownerId: string, now = new Date()) {
+    return acquireWorkerLease(ownerId, now);
+  },
+  recoverInterruptedWork(ownerId: string, now = new Date()) {
+    return recoverInterruptedWork(ownerId, now);
+  },
+  acquireJobLock(jobKey: string) {
+    return tryAcquireJobLock(jobKey);
+  },
+  releaseJobLock(client: JobLockClient, jobKey: string) {
+    return releaseJobLock(client, jobKey);
+  },
+  leaseId,
+  leaseMs: WORKER_LEASE_MS,
+  staleJobMs: STALE_JOB_MS,
+};
 
 async function claimNextJob(): Promise<ClaimedJob | null> {
   const now = new Date();

@@ -66,7 +66,7 @@ export async function initializeRadarDatabaseSecurity(): Promise<void> {
             AND tablename = radar_table.tablename
         LOOP
           EXECUTE format(
-            'ALTER POLICY %I ON %I.%I TO radar_app USING (%I = current_setting(''app.workspace_id'', true)) WITH CHECK (%I = current_setting(''app.workspace_id'', true))',
+            'ALTER POLICY %I ON %I.%I TO ${role} USING (%I = current_setting(''app.workspace_id'', true)) WITH CHECK (%I = current_setting(''app.workspace_id'', true))',
             radar_policy.policyname,
             radar_table.schemaname,
             radar_table.tablename,
