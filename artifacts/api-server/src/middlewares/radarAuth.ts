@@ -24,7 +24,7 @@ export function requireRadarAccess(req: Request, res: Response, next: NextFuncti
     res.status(503).json({ error: "La autorización de producción no está configurada" });
     return;
   }
-  if (allowed.size > 0 && !allowed.has(userId)) {
+  if (allowed.size > 0 && !allowed.has("*") && !allowed.has(userId)) {
     res.status(403).json({ error: "Sin permisos para acceder a RadarOH" });
     return;
   }

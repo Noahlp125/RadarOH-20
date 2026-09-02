@@ -26,3 +26,6 @@ channel = "stable-25_05"
 
 [userenv.shared]
 RADAR_WORKSPACE_ID = "oh-casas"
+
+[userenv.production]
+RADAR_AUTHORIZED_USER_IDS = "*"
