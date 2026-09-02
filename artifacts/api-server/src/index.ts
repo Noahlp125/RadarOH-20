@@ -1,9 +1,8 @@
 import app from "./app";
 import { pool } from "@workspace/db";
 import { logger } from "./lib/logger";
-import { startRadarMonitorScheduler, stopRadarMonitorScheduler } from "./lib/radar/monitoring";
-import { startRadarAiScheduler, stopRadarAiScheduler } from "./lib/radar/ai";
 import { initializeRadarDatabaseSecurity } from "./lib/radar/database-security";
+import { startRadarWorker, stopRadarWorker } from "./lib/radar/worker";
 
 const rawPort = process.env["PORT"];
 
@@ -28,8 +27,7 @@ const server = app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
-  startRadarMonitorScheduler();
-  startRadarAiScheduler();
+  startRadarWorker();
 });
 
 let shuttingDown = false;
@@ -37,8 +35,6 @@ async function shutdown(signal: string) {
   if (shuttingDown) return;
   shuttingDown = true;
   logger.info({ signal }, "Graceful shutdown started");
-  stopRadarMonitorScheduler();
-  stopRadarAiScheduler();
 
   const forceExit = setTimeout(() => {
     logger.error("Graceful shutdown timed out");
@@ -46,12 +42,16 @@ async function shutdown(signal: string) {
   }, 10_000);
   forceExit.unref();
 
-  server.close(async (error) => {
-    if (error) logger.error({ err: error }, "HTTP server close failed");
-    await pool.end();
-    clearTimeout(forceExit);
-    process.exit(error ? 1 : 0);
+  const serverClosed = new Promise<Error | null>((resolve) => {
+    server.close((error) => {
+      if (error) logger.error({ err: error }, "HTTP server close failed");
+      resolve(error ?? null);
+    });
   });
+  const [serverError] = await Promise.all([serverClosed, stopRadarWorker()]);
+  await pool.end();
+  clearTimeout(forceExit);
+  process.exit(serverError ? 1 : 0);
 }
 
 process.once("SIGTERM", () => void shutdown("SIGTERM"));

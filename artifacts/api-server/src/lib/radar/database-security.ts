@@ -32,6 +32,8 @@ export async function initializeRadarDatabaseSecurity(): Promise<void> {
 
     DO $$
     DECLARE radar_table record;
+    DECLARE radar_policy record;
+    DECLARE tenant_column text;
     BEGIN
       FOR radar_table IN
         SELECT schemaname, tablename
@@ -43,6 +45,35 @@ export async function initializeRadarDatabaseSecurity(): Promise<void> {
           radar_table.schemaname,
           radar_table.tablename
         );
+        EXECUTE format(
+          'ALTER TABLE %I.%I ENABLE ROW LEVEL SECURITY',
+          radar_table.schemaname,
+          radar_table.tablename
+        );
+        EXECUTE format(
+          'ALTER TABLE %I.%I FORCE ROW LEVEL SECURITY',
+          radar_table.schemaname,
+          radar_table.tablename
+        );
+        tenant_column := CASE
+          WHEN radar_table.tablename = 'radar_workspaces' THEN 'id'
+          ELSE 'workspace_id'
+        END;
+        FOR radar_policy IN
+          SELECT policyname
+          FROM pg_policies
+          WHERE schemaname = radar_table.schemaname
+            AND tablename = radar_table.tablename
+        LOOP
+          EXECUTE format(
+            'ALTER POLICY %I ON %I.%I TO radar_app USING (%I = current_setting(''app.workspace_id'', true)) WITH CHECK (%I = current_setting(''app.workspace_id'', true))',
+            radar_policy.policyname,
+            radar_table.schemaname,
+            radar_table.tablename,
+            tenant_column,
+            tenant_column
+          );
+        END LOOP;
       END LOOP;
     END
     $$;

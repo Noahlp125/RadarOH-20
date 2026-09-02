@@ -15,6 +15,8 @@ import {
   radarMonitorEvidence,
   radarMonitorRuns,
   radarSources,
+  radarWorkerJobs,
+  type RadarTransaction,
 } from "@workspace/db";
 import { logger } from "../logger";
 import {
@@ -33,11 +35,8 @@ type ChangeRow = typeof radarChangeEvents.$inferSelect;
 type CompetitorRow = typeof radarCompetitors.$inferSelect;
 
 const MAX_ATTEMPTS = 3;
-const SCHEDULER_INTERVAL_MS = 60_000;
 const SCHEDULER_BATCH_SIZE = 10;
 const runningSources = new Set<string>();
-let schedulerTimer: NodeJS.Timeout | null = null;
-let schedulerTickActive = false;
 
 export class MonitorSourceNotFoundError extends Error {}
 
@@ -215,37 +214,59 @@ export async function runMonitorSource(
   }
 }
 
-export function startRadarMonitorScheduler() {
-  if (schedulerTimer) return;
-  const tick = async () => {
-    if (schedulerTickActive) return;
-    schedulerTickActive = true;
-    try {
-      const due = await getDueSources();
-      for (const source of due) {
-        try {
-          await runMonitorSource(source.legacyId, "scheduler");
-        } catch (error) {
-          logger.error({ err: error, sourceId: source.legacyId }, "Scheduled RadarOH source failed");
-        }
+export async function enqueueDueRadarMonitorJobs() {
+  const now = new Date();
+  return withRadarTransaction(async (tx) => {
+    const due = await getDueSources(tx, now);
+    let enqueued = 0;
+    for (const source of due) {
+      const jobKey = `monitor:${source.id}`;
+      const [existing] = await tx
+        .select()
+        .from(radarWorkerJobs)
+        .where(and(
+          eq(radarWorkerJobs.workspaceId, RADAR_WORKSPACE_ID),
+          eq(radarWorkerJobs.jobKey, jobKey),
+        ))
+        .limit(1);
+      if (!existing) {
+        await tx.insert(radarWorkerJobs).values({
+          id: randomUUID(),
+          workspaceId: RADAR_WORKSPACE_ID,
+          jobKey,
+          kind: "monitor",
+          sourceId: source.id,
+          status: "queued",
+          availableAt: now,
+          payload: { source_legacy_id: source.legacyId },
+        });
+        enqueued += 1;
+      } else if (
+        (existing.status === "success" || existing.status === "error") &&
+        existing.availableAt <= now
+      ) {
+        await tx
+          .update(radarWorkerJobs)
+          .set({
+            status: "queued",
+            availableAt: now,
+            lockedAt: null,
+            lockedBy: null,
+            startedAt: null,
+            finishedAt: null,
+            errorMessage: "",
+            updatedAt: now,
+          })
+          .where(eq(radarWorkerJobs.id, existing.id));
+        enqueued += 1;
       }
-    } catch (error) {
-      logger.error({ err: error }, "RadarOH scheduler tick failed");
-    } finally {
-      schedulerTickActive = false;
     }
-  };
-  schedulerTimer = setInterval(() => void tick(), SCHEDULER_INTERVAL_MS);
-  setTimeout(() => void tick(), 2_000);
-  logger.info({ intervalMs: SCHEDULER_INTERVAL_MS }, "RadarOH monitor scheduler started");
+    return { due: due.length, enqueued };
+  });
 }
 
-export function stopRadarMonitorScheduler() {
-  if (schedulerTimer) {
-    clearInterval(schedulerTimer);
-    schedulerTimer = null;
-  }
-  logger.info("RadarOH monitor scheduler stopped");
+export async function executeRadarMonitorJob(sourceLegacyId: string) {
+  return runMonitorSource(sourceLegacyId, "scheduler");
 }
 
 async function getRunnableSources(sourceLegacyId?: string) {
@@ -270,23 +291,20 @@ async function getRunnableSources(sourceLegacyId?: string) {
   });
 }
 
-async function getDueSources() {
-  const now = new Date();
-  return withRadarTransaction((tx) =>
-    tx
-      .select()
-      .from(radarSources)
-      .where(
-        and(
-          eq(radarSources.workspaceId, RADAR_WORKSPACE_ID),
-          eq(radarSources.enabled, true),
-          ne(radarSources.connector, "manual"),
-          or(isNull(radarSources.nextRunAt), lte(radarSources.nextRunAt, now)),
-        ),
-      )
-      .orderBy(asc(radarSources.nextRunAt))
-      .limit(SCHEDULER_BATCH_SIZE),
-  );
+async function getDueSources(tx: RadarTransaction, now: Date) {
+  return tx
+    .select()
+    .from(radarSources)
+    .where(
+      and(
+        eq(radarSources.workspaceId, RADAR_WORKSPACE_ID),
+        eq(radarSources.enabled, true),
+        ne(radarSources.connector, "manual"),
+        or(isNull(radarSources.nextRunAt), lte(radarSources.nextRunAt, now)),
+      ),
+    )
+    .orderBy(asc(radarSources.nextRunAt))
+    .limit(SCHEDULER_BATCH_SIZE);
 }
 
 async function fetchWithRetry(connector: RadarConnector, endpointUrl: string) {

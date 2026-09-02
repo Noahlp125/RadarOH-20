@@ -13,3 +13,5 @@ export * from "./monitor-runs";
 export * from "./plan-items";
 export * from "./sources";
 export * from "./workspaces";
+export * from "./worker-jobs";
+export * from "./worker-leases";

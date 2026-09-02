@@ -60,7 +60,7 @@ No preferences recorded.
 ## Gotchas
 
 - Direct Vite builds require the workflow-provided `PORT` and `BASE_PATH`; use the managed RadarOH workflow for preview verification.
-- Do not create a monitoring worker before a later phase is explicitly approved.
+- Monitoring and AI recurring work must use the PostgreSQL-backed durable worker; do not add independent in-process schedulers or a second worker command.
 - Do not remove the preserved JSON or legacy source snapshots.
 
 ## Pointers

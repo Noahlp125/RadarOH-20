@@ -10,6 +10,7 @@ import {
   radarCompetitors,
   radarMonitorEvidence,
   radarSources,
+  radarWorkerJobs,
 } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../logger";
@@ -23,8 +24,7 @@ import {
 } from "./ai-validation";
 
 const MODEL = "gpt-5.6-terra";
-const AI_INTERVAL_MS = 5 * 60_000;
-let aiScheduler: NodeJS.Timeout | null = null;
+export const RADAR_AI_INTERVAL_MS = 5 * 60_000;
 let analysisRunning = false;
 export class NoEvidenceForAnalysisError extends Error {}
 export class AiAnalysisNotFoundError extends Error {}
@@ -157,28 +157,60 @@ export async function updateRadarAiAlert(id: string, status: "read" | "unread") 
   });
 }
 
-export function startRadarAiScheduler() {
-  if (aiScheduler) return;
-  const tick = async () => {
-    if (analysisRunning) return;
-    try {
-      await runRadarAiAnalysis({ trigger: "scheduler", limit: 25 });
-    } catch (error) {
-      if (!(error instanceof NoEvidenceForAnalysisError)) {
-        logger.error({ err: error }, "RadarOH scheduled AI analysis failed");
-      }
+export async function enqueueRadarAiJob() {
+  const now = new Date();
+  const jobKey = `ai:${RADAR_WORKSPACE_ID}`;
+  return withRadarTransaction(async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(radarWorkerJobs)
+      .where(and(
+        eq(radarWorkerJobs.workspaceId, RADAR_WORKSPACE_ID),
+        eq(radarWorkerJobs.jobKey, jobKey),
+      ))
+      .limit(1);
+    if (!existing) {
+      await tx.insert(radarWorkerJobs).values({
+        id: randomUUID(),
+        workspaceId: RADAR_WORKSPACE_ID,
+        jobKey,
+        kind: "ai",
+        status: "queued",
+        availableAt: now,
+      });
+      return { enqueued: true };
     }
-  };
-  aiScheduler = setInterval(() => void tick(), AI_INTERVAL_MS);
-  logger.info({ intervalMs: AI_INTERVAL_MS, model: MODEL }, "RadarOH AI scheduler started");
+    if (
+      (existing.status === "success" || existing.status === "error") &&
+      existing.availableAt <= now
+    ) {
+      await tx
+        .update(radarWorkerJobs)
+        .set({
+          status: "queued",
+          availableAt: now,
+          lockedAt: null,
+          lockedBy: null,
+          startedAt: null,
+          finishedAt: null,
+          errorMessage: "",
+          updatedAt: now,
+        })
+        .where(eq(radarWorkerJobs.id, existing.id));
+      return { enqueued: true };
+    }
+    return { enqueued: false };
+  });
 }
 
-export function stopRadarAiScheduler() {
-  if (aiScheduler) {
-    clearInterval(aiScheduler);
-    aiScheduler = null;
+export async function executeRadarAiJob() {
+  try {
+    await runRadarAiAnalysis({ trigger: "scheduler", limit: 25 });
+    return { skipped: false };
+  } catch (error) {
+    if (error instanceof NoEvidenceForAnalysisError) return { skipped: true };
+    throw error;
   }
-  logger.info("RadarOH AI scheduler stopped");
 }
 
 async function loadUnanalyzedEvidence(limit: number, sourceLegacyId?: string) {

@@ -3,3 +3,5 @@
 - [OpenAPI date query validation](openapi-date-query-validation.md) — validate Express query strings at the route boundary when generated Zod expects runtime Date objects.
 - [RadarOH effective RLS](radaroh-effective-rls.md) — managed DB owners may bypass RLS; Radar transactions must reduce privileges to a dedicated NOBYPASSRLS role.
 - [RadarOH predictive claims](radaroh-predictive-claims.md) — scores and leading signals stay deterministic and evidence-backed until labeled outcomes support calibrated prediction.
+- [RadarOH worker coordination](radaroh-worker-coordination.md) — recurring jobs require a DB lease plus per-job advisory fencing and recovery on every leader tick.
+- [Drizzle RLS policy reconciliation](drizzle-rls-policy-reconciliation.md) — schema push may not repair policy expressions; normalize and verify RLS at startup.
