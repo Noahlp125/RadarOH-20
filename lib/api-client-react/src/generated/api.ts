@@ -23,6 +23,12 @@ import type {
   GetRadarMonitorHistoryParams,
   HealthStatus,
   NotFoundResponse,
+  RadarAiAlert,
+  RadarAiAlertUpdate,
+  RadarAiAnalysis,
+  RadarAiAnalysisRequest,
+  RadarAiAnalysisResponse,
+  RadarAiStatus,
   RadarChangeEvent,
   RadarCompetitor,
   RadarCompetitorInput,
@@ -1241,4 +1247,378 @@ export function useGetRadarMonitorHistory<TData = Awaited<ReturnType<typeof getR
 
 
 
+
+export const getGetRadarAiStatusUrl = () => {
+
+
+
+
+  return `/api/radar/ai/status`
+}
+
+/**
+ * @summary Read the latest AI insights and alert count
+ */
+export const getRadarAiStatus = async ( options?: Parameters<typeof customFetch>[1]): Promise<RadarAiStatus> => {
+
+  return customFetch<RadarAiStatus>(getGetRadarAiStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRadarAiStatusQueryKey = () => {
+    return [
+    `/api/radar/ai/status`
+    ] as const;
+    }
+
+
+export const getGetRadarAiStatusQueryOptions = <TData = Awaited<ReturnType<typeof getRadarAiStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarAiStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRadarAiStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRadarAiStatus>>> = ({ signal }) => getRadarAiStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRadarAiStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRadarAiStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getRadarAiStatus>>>
+export type GetRadarAiStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read the latest AI insights and alert count
+ */
+
+export function useGetRadarAiStatus<TData = Awaited<ReturnType<typeof getRadarAiStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarAiStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRadarAiStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRunRadarAiAnalysisUrl = () => {
+
+
+
+
+  return `/api/radar/ai/analyze`
+}
+
+/**
+ * @summary Analyze stored RadarOH evidence with AI
+ */
+export const runRadarAiAnalysis = async (radarAiAnalysisRequest?: RadarAiAnalysisRequest, options?: Parameters<typeof customFetch>[1]): Promise<RadarAiAnalysisResponse> => {
+
+  return customFetch<RadarAiAnalysisResponse>(getRunRadarAiAnalysisUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(radarAiAnalysisRequest)
+  }
+);}
+
+
+
+
+
+export const getRunRadarAiAnalysisMutationOptions = <TError = ErrorType<ValidationErrorResponse | ServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runRadarAiAnalysis>>, TError,{data?: BodyType<RadarAiAnalysisRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runRadarAiAnalysis>>, TError,{data?: BodyType<RadarAiAnalysisRequest>}, TContext> => {
+
+const mutationKey = ['runRadarAiAnalysis'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runRadarAiAnalysis>>, {data?: BodyType<RadarAiAnalysisRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  runRadarAiAnalysis(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunRadarAiAnalysisMutationResult = NonNullable<Awaited<ReturnType<typeof runRadarAiAnalysis>>>
+    export type RunRadarAiAnalysisMutationBody = BodyType<RadarAiAnalysisRequest> | undefined
+    export type RunRadarAiAnalysisMutationError = ErrorType<ValidationErrorResponse | ServerErrorResponse>
+
+    /**
+ * @summary Analyze stored RadarOH evidence with AI
+ */
+export const useRunRadarAiAnalysis = <TError = ErrorType<ValidationErrorResponse | ServerErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runRadarAiAnalysis>>, TError,{data?: BodyType<RadarAiAnalysisRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runRadarAiAnalysis>>,
+        TError,
+        {data?: BodyType<RadarAiAnalysisRequest>},
+        TContext
+      > => {
+      return useMutation(getRunRadarAiAnalysisMutationOptions(options));
+    }
+
+export const getListRadarAiAnalysesUrl = () => {
+
+
+
+
+  return `/api/radar/ai/analyses`
+}
+
+/**
+ * @summary List previous AI analyses
+ */
+export const listRadarAiAnalyses = async ( options?: Parameters<typeof customFetch>[1]): Promise<RadarAiAnalysis[]> => {
+
+  return customFetch<RadarAiAnalysis[]>(getListRadarAiAnalysesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRadarAiAnalysesQueryKey = () => {
+    return [
+    `/api/radar/ai/analyses`
+    ] as const;
+    }
+
+
+export const getListRadarAiAnalysesQueryOptions = <TData = Awaited<ReturnType<typeof listRadarAiAnalyses>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRadarAiAnalyses>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRadarAiAnalysesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRadarAiAnalyses>>> = ({ signal }) => listRadarAiAnalyses({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRadarAiAnalyses>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRadarAiAnalysesQueryResult = NonNullable<Awaited<ReturnType<typeof listRadarAiAnalyses>>>
+export type ListRadarAiAnalysesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List previous AI analyses
+ */
+
+export function useListRadarAiAnalyses<TData = Awaited<ReturnType<typeof listRadarAiAnalyses>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRadarAiAnalyses>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRadarAiAnalysesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListRadarAiAlertsUrl = () => {
+
+
+
+
+  return `/api/radar/ai/alerts`
+}
+
+/**
+ * @summary List AI alerts
+ */
+export const listRadarAiAlerts = async ( options?: Parameters<typeof customFetch>[1]): Promise<RadarAiAlert[]> => {
+
+  return customFetch<RadarAiAlert[]>(getListRadarAiAlertsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRadarAiAlertsQueryKey = () => {
+    return [
+    `/api/radar/ai/alerts`
+    ] as const;
+    }
+
+
+export const getListRadarAiAlertsQueryOptions = <TData = Awaited<ReturnType<typeof listRadarAiAlerts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRadarAiAlerts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRadarAiAlertsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRadarAiAlerts>>> = ({ signal }) => listRadarAiAlerts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRadarAiAlerts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRadarAiAlertsQueryResult = NonNullable<Awaited<ReturnType<typeof listRadarAiAlerts>>>
+export type ListRadarAiAlertsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List AI alerts
+ */
+
+export function useListRadarAiAlerts<TData = Awaited<ReturnType<typeof listRadarAiAlerts>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRadarAiAlerts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRadarAiAlertsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateRadarAiAlertUrl = (id: string,) => {
+
+
+
+
+  return `/api/radar/ai/alerts/${id}`
+}
+
+/**
+ * @summary Mark an AI alert as read or unread
+ */
+export const updateRadarAiAlert = async (id: string,
+    radarAiAlertUpdate: RadarAiAlertUpdate, options?: Parameters<typeof customFetch>[1]): Promise<RadarAiAlert> => {
+
+  return customFetch<RadarAiAlert>(getUpdateRadarAiAlertUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(radarAiAlertUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateRadarAiAlertMutationOptions = <TError = ErrorType<NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRadarAiAlert>>, TError,{id: string;data: BodyType<RadarAiAlertUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRadarAiAlert>>, TError,{id: string;data: BodyType<RadarAiAlertUpdate>}, TContext> => {
+
+const mutationKey = ['updateRadarAiAlert'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRadarAiAlert>>, {id: string;data: BodyType<RadarAiAlertUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateRadarAiAlert(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRadarAiAlertMutationResult = NonNullable<Awaited<ReturnType<typeof updateRadarAiAlert>>>
+    export type UpdateRadarAiAlertMutationBody = BodyType<RadarAiAlertUpdate>
+    export type UpdateRadarAiAlertMutationError = ErrorType<NotFoundResponse>
+
+    /**
+ * @summary Mark an AI alert as read or unread
+ */
+export const useUpdateRadarAiAlert = <TError = ErrorType<NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRadarAiAlert>>, TError,{id: string;data: BodyType<RadarAiAlertUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateRadarAiAlert>>,
+        TError,
+        {id: string;data: BodyType<RadarAiAlertUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateRadarAiAlertMutationOptions(options));
+    }
 

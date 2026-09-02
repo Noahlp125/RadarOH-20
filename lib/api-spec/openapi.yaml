@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: radar
     description: RadarOH persistence and migration operations
+  - name: radar-ai
+    description: Evidence-grounded RadarOH AI analysis and alerts
 paths:
   /healthz:
     get:
@@ -334,6 +336,90 @@ paths:
                 items: { $ref: "#/components/schemas/RadarChangeEvent" }
         "500":
           $ref: "#/components/responses/ServerError"
+  /radar/ai/status:
+    get:
+      operationId: getRadarAiStatus
+      tags: [radar-ai]
+      summary: Read the latest AI insights and alert count
+      responses:
+        "200":
+          description: Latest AI status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarAiStatus"
+  /radar/ai/analyze:
+    post:
+      operationId: runRadarAiAnalysis
+      tags: [radar-ai]
+      summary: Analyze stored RadarOH evidence with AI
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RadarAiAnalysisRequest"
+      responses:
+        "200":
+          description: Completed evidence-grounded analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarAiAnalysisResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /radar/ai/analyses:
+    get:
+      operationId: listRadarAiAnalyses
+      tags: [radar-ai]
+      summary: List previous AI analyses
+      responses:
+        "200":
+          description: AI analysis history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RadarAiAnalysis"
+  /radar/ai/alerts:
+    get:
+      operationId: listRadarAiAlerts
+      tags: [radar-ai]
+      summary: List AI alerts
+      responses:
+        "200":
+          description: AI alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RadarAiAlert"
+  /radar/ai/alerts/{id}:
+    patch:
+      operationId: updateRadarAiAlert
+      tags: [radar-ai]
+      summary: Mark an AI alert as read or unread
+      parameters:
+        - $ref: "#/components/parameters/RadarId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RadarAiAlertUpdate"
+      responses:
+        "200":
+          description: Updated alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarAiAlert"
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
   parameters:
     RadarId:
@@ -674,4 +760,87 @@ components:
         changes:
           type: array
           items: { $ref: "#/components/schemas/RadarChangeEvent" }
+    RadarAiAnalysisRequest:
+      type: object
+      properties:
+        limit: { type: number, minimum: 1, maximum: 50 }
+        source_id: { type: string }
+    RadarAiFinding:
+      type: object
+      required: [id, change_event_id, event_type, importance, relevance, confidence, title, summary, rationale, opportunity, risk, trend, evidence_ids, suggested_updates]
+      properties:
+        id: { type: string }
+        change_event_id: { type: string, nullable: true }
+        event_type: { type: string }
+        importance: { type: string, enum: [low, medium, high, critical] }
+        relevance: { type: number, minimum: 0, maximum: 100 }
+        confidence: { type: number, minimum: 0, maximum: 100 }
+        title: { type: string }
+        summary: { type: string }
+        rationale: { type: string }
+        opportunity: { type: string }
+        risk: { type: string }
+        trend: { type: string }
+        evidence_ids:
+          type: array
+          items: { type: string }
+        suggested_updates:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    RadarAiAnalysis:
+      type: object
+      required: [id, trigger, model, status, source_evidence_count, event_count, summary, trends, error_message, started_at, completed_at, findings]
+      properties:
+        id: { type: string }
+        trigger: { type: string, enum: [manual, scheduler] }
+        model: { type: string }
+        status: { type: string, enum: [running, success, error] }
+        source_evidence_count: { type: number, minimum: 0 }
+        event_count: { type: number, minimum: 0 }
+        summary: { type: string }
+        trends:
+          type: array
+          items: { type: object, additionalProperties: true }
+        error_message: { type: string }
+        started_at: { type: string }
+        completed_at: { type: string, nullable: true }
+        findings:
+          type: array
+          items: { $ref: "#/components/schemas/RadarAiFinding" }
+    RadarAiAnalysisResponse:
+      allOf:
+        - $ref: "#/components/schemas/RadarAiAnalysis"
+    RadarAiAlert:
+      type: object
+      required: [id, finding_id, competitor_id, competitor_name, title, description, importance, status, created_at, read_at]
+      properties:
+        id: { type: string }
+        finding_id: { type: string }
+        competitor_id: { type: string, nullable: true }
+        competitor_name: { type: string, nullable: true }
+        title: { type: string }
+        description: { type: string }
+        importance: { type: string, enum: [low, medium, high, critical] }
+        status: { type: string, enum: [unread, read] }
+        created_at: { type: string }
+        read_at: { type: string, nullable: true }
+    RadarAiAlertUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [unread, read] }
+    RadarAiStatus:
+      type: object
+      required: [latest_analysis, unread_alerts, recent_alerts]
+      properties:
+        latest_analysis:
+          allOf:
+            - $ref: "#/components/schemas/RadarAiAnalysis"
+          nullable: true
+        unread_alerts: { type: number, minimum: 0 }
+        recent_alerts:
+          type: array
+          items: { $ref: "#/components/schemas/RadarAiAlert" }
 

@@ -350,6 +350,140 @@ export interface RadarMonitorRunResult {
   changes: RadarChangeEvent[];
 }
 
+export interface RadarAiAnalysisRequest {
+  /**
+     * @minimum 1
+     * @maximum 50
+     */
+  limit?: number;
+  source_id?: string;
+}
+
+export type RadarAiFindingImportance = typeof RadarAiFindingImportance[keyof typeof RadarAiFindingImportance];
+
+
+export const RadarAiFindingImportance = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export type RadarAiFindingSuggestedUpdatesItem = { [key: string]: unknown };
+
+export interface RadarAiFinding {
+  id: string;
+  change_event_id: string | null;
+  event_type: string;
+  importance: RadarAiFindingImportance;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  relevance: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  confidence: number;
+  title: string;
+  summary: string;
+  rationale: string;
+  opportunity: string;
+  risk: string;
+  trend: string;
+  evidence_ids: string[];
+  suggested_updates: RadarAiFindingSuggestedUpdatesItem[];
+}
+
+export type RadarAiAnalysisTrigger = typeof RadarAiAnalysisTrigger[keyof typeof RadarAiAnalysisTrigger];
+
+
+export const RadarAiAnalysisTrigger = {
+  manual: 'manual',
+  scheduler: 'scheduler',
+} as const;
+
+export type RadarAiAnalysisStatus = typeof RadarAiAnalysisStatus[keyof typeof RadarAiAnalysisStatus];
+
+
+export const RadarAiAnalysisStatus = {
+  running: 'running',
+  success: 'success',
+  error: 'error',
+} as const;
+
+export type RadarAiAnalysisTrendsItem = { [key: string]: unknown };
+
+export interface RadarAiAnalysis {
+  id: string;
+  trigger: RadarAiAnalysisTrigger;
+  model: string;
+  status: RadarAiAnalysisStatus;
+  /** @minimum 0 */
+  source_evidence_count: number;
+  /** @minimum 0 */
+  event_count: number;
+  summary: string;
+  trends: RadarAiAnalysisTrendsItem[];
+  error_message: string;
+  started_at: string;
+  completed_at: string | null;
+  findings: RadarAiFinding[];
+}
+
+export type RadarAiAnalysisResponse = RadarAiAnalysis;
+
+export type RadarAiAlertImportance = typeof RadarAiAlertImportance[keyof typeof RadarAiAlertImportance];
+
+
+export const RadarAiAlertImportance = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export type RadarAiAlertStatus = typeof RadarAiAlertStatus[keyof typeof RadarAiAlertStatus];
+
+
+export const RadarAiAlertStatus = {
+  unread: 'unread',
+  read: 'read',
+} as const;
+
+export interface RadarAiAlert {
+  id: string;
+  finding_id: string;
+  competitor_id: string | null;
+  competitor_name: string | null;
+  title: string;
+  description: string;
+  importance: RadarAiAlertImportance;
+  status: RadarAiAlertStatus;
+  created_at: string;
+  read_at: string | null;
+}
+
+export type RadarAiAlertUpdateStatus = typeof RadarAiAlertUpdateStatus[keyof typeof RadarAiAlertUpdateStatus];
+
+
+export const RadarAiAlertUpdateStatus = {
+  unread: 'unread',
+  read: 'read',
+} as const;
+
+export interface RadarAiAlertUpdate {
+  status: RadarAiAlertUpdateStatus;
+}
+
+export interface RadarAiStatus {
+  latest_analysis: RadarAiAnalysis | null;
+  /** @minimum 0 */
+  unread_alerts: number;
+  recent_alerts: RadarAiAlert[];
+}
+
 /**
  * Request validation failed
  */

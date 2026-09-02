@@ -7,7 +7,18 @@ import {
   deleteRadarSource,
   replaceRadarState,
   runRadarMonitor,
+  getRadarAiStatus,
+  runRadarAiAnalysis,
+  listRadarAiAnalyses,
+  listRadarAiAlerts,
+  updateRadarAiAlert,
   type RadarState,
+  type RadarAiStatus,
+  type RadarAiAnalysisRequest,
+  type RadarAiAnalysisResponse,
+  type RadarAiAnalysis,
+  type RadarAiAlert,
+  type RadarAiAlertUpdate
 } from "@workspace/api-client-react";
 
 export type RadarLocalState = Omit<RadarState, "workspaceId">;
@@ -48,4 +59,24 @@ export async function removeRadarSource(sourceId: string) {
 
 export async function removeRadarCompetitor(competitorId: string) {
   return deleteRadarCompetitor(competitorId);
+}
+
+export async function fetchRadarAiStatus(): Promise<RadarAiStatus> {
+  return getRadarAiStatus();
+}
+
+export async function triggerRadarAiAnalysis(data?: RadarAiAnalysisRequest): Promise<RadarAiAnalysisResponse> {
+  return runRadarAiAnalysis(data);
+}
+
+export async function fetchRadarAiAnalyses(): Promise<RadarAiAnalysis[]> {
+  return listRadarAiAnalyses();
+}
+
+export async function fetchRadarAiAlerts(): Promise<RadarAiAlert[]> {
+  return listRadarAiAlerts();
+}
+
+export async function markRadarAiAlert(id: string, data: RadarAiAlertUpdate): Promise<RadarAiAlert> {
+  return updateRadarAiAlert(id, data);
 }

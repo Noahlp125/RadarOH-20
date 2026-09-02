@@ -29,6 +29,9 @@ import {
   Trash2,
   Upload,
   X,
+  Sparkles,
+  Zap,
+  CheckCircle,
 } from "lucide-react";
 import {
   fetchRadarState,
@@ -39,6 +42,11 @@ import {
   removeRadarSource,
   saveRadarState,
   triggerRadarMonitor,
+  fetchRadarAiStatus,
+  triggerRadarAiAnalysis,
+  fetchRadarAiAnalyses,
+  fetchRadarAiAlerts,
+  markRadarAiAlert,
 } from "../data/radarApi";
 
 const KEYS = {
@@ -120,6 +128,40 @@ export default function RadarOH() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const importInputRef = useRef(null);
 
+  const [aiStatus, setAiStatus] = useState(null);
+  const [aiAnalyses, setAiAnalyses] = useState([]);
+  const [aiAlerts, setAiAlerts] = useState([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [runningAnalysis, setRunningAnalysis] = useState(false);
+
+  const loadAiData = async (tabName) => {
+    setAiLoading(true);
+    setAiError("");
+    try {
+      if (tabName === "insights") {
+        const status = await fetchRadarAiStatus();
+        setAiStatus(status);
+      } else if (tabName === "historial_ia") {
+        const analyses = await fetchRadarAiAnalyses();
+        setAiAnalyses(analyses);
+      } else if (tabName === "alertas") {
+        const alerts = await fetchRadarAiAlerts();
+        setAiAlerts(alerts);
+      }
+    } catch (error) {
+      setAiError(error instanceof Error ? error.message : "No se pudo cargar la información de IA.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!loading && (tab === "insights" || tab === "historial_ia" || tab === "alertas")) {
+      void loadAiData(tab);
+    }
+  }, [tab, loading]);
+
   const loadMonitorData = async (includeHistory = false) => {
     setMonitorLoading(true);
     setMonitorError("");
@@ -157,6 +199,29 @@ export default function RadarOH() {
       setMonitorError(error instanceof Error ? error.message : "No se pudo ejecutar la monitorización.");
     } finally {
       setRunningSource(null);
+    }
+  };
+
+  const runAiAnalysis = async (limit) => {
+    setRunningAnalysis(true);
+    setAiError("");
+    try {
+      await triggerRadarAiAnalysis({ limit });
+      await loadAiData("insights");
+    } catch (error) {
+      setAiError(error instanceof Error ? error.message : "No se pudo ejecutar el análisis.");
+    } finally {
+      setRunningAnalysis(false);
+    }
+  };
+
+  const markAlert = async (id, status) => {
+    try {
+      const updated = await markRadarAiAlert(id, { status });
+      setAiAlerts((current) => current.map((a) => (a.id === id ? updated : a)));
+      // Also update aiStatus if we are viewing insights? Usually not needed if we are on alerts tab
+    } catch (error) {
+      setAiError(error instanceof Error ? error.message : "No se pudo actualizar la alerta.");
     }
   };
 
@@ -395,6 +460,9 @@ export default function RadarOH() {
             {tab === "plan" && <PlanTab plan={plan} setPlan={setPlan} newPlanText={newPlanText} setNewPlanText={setNewPlanText} />}
             {tab === "monitorizacion" && <MonitorizacionTab status={monitorStatus} loading={monitorLoading} error={monitorError} runningSource={runningSource} onRefresh={() => loadMonitorData(false)} onRun={runMonitor} onConfigure={() => selectTab("fuentes")} />}
             {tab === "historial" && <HistorialTab events={monitorHistory} competitors={competitors} loading={monitorLoading} error={monitorError} onRefresh={() => loadMonitorData(true)} />}
+            {tab === "insights" && <InsightsTab status={aiStatus} loading={aiLoading} error={aiError} onRun={(limit) => runAiAnalysis(limit)} running={runningAnalysis} />}
+            {tab === "alertas" && <AlertasTab alerts={aiAlerts} loading={aiLoading} error={aiError} onMark={markAlert} onRefresh={() => loadAiData("alertas")} />}
+            {tab === "historial_ia" && <HistorialIATab analyses={aiAnalyses} loading={aiLoading} error={aiError} onRefresh={() => loadAiData("historial_ia")} />}
           </main>
         </div>
       </div>
@@ -404,7 +472,7 @@ export default function RadarOH() {
 }
 
 function tabTitle(tab) {
-  return { fuentes: "Fuentes de señal", competidores: "Mapa competitivo", keywords: "Keywords estratégicas", plan: "Plan de situación", monitorizacion: "Monitorización automática", historial: "Historial competitivo" }[tab] || "RadarOH";
+  return { fuentes: "Fuentes de señal", competidores: "Mapa competitivo", keywords: "Keywords estratégicas", plan: "Plan de situación", monitorizacion: "Monitorización automática", historial: "Historial competitivo", insights: "Insights IA", alertas: "Alertas de mercado", historial_ia: "Historial IA" }[tab] || "RadarOH";
 }
 
 function Sidebar({ tab, onSelect, open, today }) {
@@ -416,7 +484,9 @@ function Sidebar({ tab, onSelect, open, today }) {
     { id: "plan", label: "Plan 30–60–90", icon: ListChecks, group: "Espacio de trabajo" },
     { id: "monitorizacion", label: "Monitorización", icon: Activity, group: "Inteligencia continua" },
     { id: "historial", label: "Historial", icon: History, group: "Inteligencia continua" },
-    { id: "alertas", label: "Alertas", icon: BellRing, disabled: true, group: "Próximamente" },
+    { id: "insights", label: "Insights IA", icon: Sparkles, group: "Inteligencia artificial" },
+    { id: "alertas", label: "Alertas", icon: BellRing, group: "Inteligencia artificial" },
+    { id: "historial_ia", label: "Historial IA", icon: History, group: "Inteligencia artificial" },
   ];
   return (
     <aside className={`rdo-sidebar ${open ? "open" : ""}`}>
@@ -424,8 +494,8 @@ function Sidebar({ tab, onSelect, open, today }) {
         <span className="rdo-brand-mark"><Radar size={19} /></span>
         <div><div className="rdo-brand-name">RadarOH</div><div className="rdo-brand-sub">OH Casas / signal desk</div></div>
       </div>
-      {["Espacio de trabajo", "Inteligencia continua", "Próximamente"].map((group) => (
-        <div key={group} style={{ marginBottom: group === "Espacio de trabajo" ? 24 : 0 }}>
+      {["Espacio de trabajo", "Inteligencia continua", "Inteligencia artificial"].map((group) => (
+        <div key={group} style={{ marginBottom: group === "Espacio de trabajo" ? 24 : group === "Inteligencia continua" ? 24 : 0 }}>
           <div className="rdo-nav-label">{group}</div>
           <nav className="rdo-nav" aria-label={group}>
             {items.filter((item) => item.group === group).map(({ id, label, icon: Icon, disabled }) => (
@@ -681,6 +751,188 @@ function PlanTab({ plan, setPlan, newPlanText, setNewPlanText }) {
     <>
       <PageIntro eyebrow="04 / ejecución" title="Plan 30–60–90" description="El diagnóstico se convierte en un ritmo de trabajo: qué hacer primero, qué validar después y qué consolidar al final del ciclo." />
       <div className="rdo-plan-grid">{HORIZONTES.map((horizon) => <Panel key={horizon} className="rdo-plan-card"><div className="rdo-plan-number">Horizonte {horizon}</div><h3 className="rdo-plan-title">Día {horizon}</h3><div className="rdo-plan-subtitle">{HORIZONTE_LABEL[horizon]}</div><div className="rdo-task-list">{(plan[horizon] || []).length === 0 && <div className="rdo-task-empty">Sin tareas todavía.</div>}{(plan[horizon] || []).map((item) => <div className="rdo-task" key={item.id}><input type="checkbox" checked={item.done} onChange={() => toggle(horizon, item.id)} aria-label={`Completar ${item.text}`} data-testid={`checkbox-plan-${item.id}`} /><span className={`rdo-task-text ${item.done ? "done" : ""}`}>{item.text}</span><IconButton title="Eliminar tarea" testId={`button-delete-plan-${item.id}`} onClick={() => remove(horizon, item.id)}><X size={13} /></IconButton></div>)}</div><div className="rdo-task-add"><input className="rdo-control" placeholder="Nueva tarea" value={newPlanText[horizon]} onChange={(event) => setNewPlanText({ ...newPlanText, [horizon]: event.target.value })} onKeyDown={(event) => event.key === "Enter" && addItem(horizon)} data-testid={`input-plan-${horizon}`} /><button className="rdo-button primary" onClick={() => addItem(horizon)} aria-label={`Añadir tarea a día ${horizon}`} data-testid={`button-add-plan-${horizon}`}><Plus size={15} /></button></div></Panel>)}</div>
+    </>
+  );
+}
+
+function InsightsTab({ status, loading, error, onRun, running }) {
+  if (loading && !status) return <div className="rdo-monitor-loading"><div className="rdo-loading-mark" /> Cargando insights...</div>;
+  if (error) return <div className="rdo-monitor-error"><AlertTriangle size={15} /><div><strong>Error al cargar insights</strong><p style={{ margin: "4px 0 0" }}>{error}</p></div></div>;
+
+  const analysis = status?.latest_analysis;
+
+  return (
+    <>
+      <PageIntro eyebrow="INTELIGENCIA ARTIFICIAL" title="Insights IA" description="Síntesis automática de señales competitivas. Detecta oportunidades, riesgos y tendencias ocultas en el ruido del mercado." action={<button className="rdo-button primary" onClick={() => onRun()} disabled={running} data-testid="button-run-ai"><Sparkles size={14} /> {running ? "Analizando..." : "Ejecutar análisis"}</button>} />
+
+      {!analysis ? (
+        <EmptyState title="Sin análisis reciente" text="Ejecuta el primer análisis para descubrir patrones y oportunidades basadas en las últimas señales." />
+      ) : (
+        <>
+          <div className="rdo-stat-grid" style={{ marginBottom: 24 }}>
+            <Stat label="Hallazgos" value={analysis.findings?.length || 0} meta="detectados" icon={Sparkles} />
+            <Stat label="Señales evaluadas" value={analysis.event_count || 0} meta="eventos recientes" icon={Activity} />
+            <Stat label="Fuentes" value={analysis.source_evidence_count || 0} meta="con evidencia" icon={Search} />
+            <Stat label="Estado" value={analysis.status === "success" ? "Completado" : analysis.status} meta={analysis.completed_at ? new Date(analysis.completed_at).toLocaleDateString() : ""} icon={CheckCircle2} />
+          </div>
+
+          <Panel style={{ marginBottom: 24 }}>
+            <SectionHead index="RESUMEN" title="Lectura de IA" />
+            <p style={{ fontSize: 13, lineHeight: 1.6, color: "hsl(var(--ink))", margin: 0 }}>{analysis.summary}</p>
+          </Panel>
+
+          {analysis.findings && analysis.findings.length > 0 && (
+            <div>
+              <SectionHead index="HALLAZGOS" title="Descubrimientos clave" description="Evidencias con mayor impacto potencial." />
+              {analysis.findings.map((finding) => (
+                <div key={finding.id} className="rdo-ai-finding" data-testid={`finding-${finding.id}`}>
+                  <div className="rdo-ai-finding-head">
+                    <div>
+                      <h4 className="rdo-ai-finding-title">{finding.title}</h4>
+                      <div className="rdo-ai-finding-meta">
+                        <Badge tone={finding.importance === "critical" ? "red" : finding.importance === "high" ? "amber" : finding.importance === "medium" ? "teal" : ""}>
+                          Importancia {finding.importance}
+                        </Badge>
+                        <Badge>Confianza {finding.confidence}%</Badge>
+                        <Badge>Relevancia {finding.relevance}%</Badge>
+                        {finding.trend && <Badge tone="signal">Tendencia: {finding.trend}</Badge>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <p style={{ fontSize: 12, margin: 0, color: "hsl(var(--ink-muted))", paddingBottom: 6 }}>{finding.summary}</p>
+
+                  <div className="rdo-ai-finding-body">
+                    <div className="rdo-ai-section">
+                      <h5 className="rdo-ai-section-title">Razonamiento</h5>
+                      <p className="rdo-ai-section-content">{finding.rationale}</p>
+                    </div>
+                    {finding.opportunity && (
+                      <div className="rdo-ai-section" style={{ borderColor: "hsl(var(--teal-soft))", backgroundColor: "hsl(var(--teal) / .03)" }}>
+                        <h5 className="rdo-ai-section-title" style={{ color: "hsl(var(--teal))" }}>Oportunidad</h5>
+                        <p className="rdo-ai-section-content">{finding.opportunity}</p>
+                      </div>
+                    )}
+                    {finding.risk && (
+                      <div className="rdo-ai-section" style={{ borderColor: "hsl(7 65% 94%)", backgroundColor: "hsl(var(--red) / .03)" }}>
+                        <h5 className="rdo-ai-section-title" style={{ color: "hsl(var(--red))" }}>Riesgo</h5>
+                        <p className="rdo-ai-section-content">{finding.risk}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {finding.suggested_updates && finding.suggested_updates.length > 0 && (
+                    <div className="rdo-ai-suggestions">
+                      <span className="rdo-ai-section-title" style={{ display: "block", marginBottom: 8 }}>Actualizaciones propuestas (contexto)</span>
+                      {finding.suggested_updates.map((update, idx) => (
+                        <span key={idx} className="rdo-ai-suggestion-item">
+                          {Object.entries(update).map(([k, v]) => `${k}: ${v}`).join(" | ")}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+function AlertasTab({ alerts, loading, error, onMark, onRefresh }) {
+  if (loading && !alerts.length) return <div className="rdo-monitor-loading"><div className="rdo-loading-mark" /> Cargando alertas...</div>;
+  if (error) return <div className="rdo-monitor-error"><AlertTriangle size={15} /><div><strong>Error al cargar alertas</strong><p style={{ margin: "4px 0 0" }}>{error}</p></div></div>;
+
+  const unreadCount = alerts.filter(a => a.status === "unread").length;
+
+  return (
+    <>
+      <PageIntro eyebrow="VIGILANCIA ACTIVA" title="Alertas de mercado" description="Notificaciones críticas generadas por cambios bruscos en la actividad de competidores o nuevas tendencias." action={<button className="rdo-button secondary" onClick={onRefresh} data-testid="button-refresh-alerts"><RefreshCw size={14} /> Refrescar</button>} />
+
+      <div className="rdo-history-toolbar">
+        <div className="rdo-history-count"><strong>{unreadCount}</strong> alertas sin leer</div>
+      </div>
+
+      {!alerts.length ? (
+        <EmptyState title="Todo despejado" text="No hay alertas registradas en el sistema en este momento." />
+      ) : (
+        <div style={{ marginTop: 16 }}>
+          <div className="rdo-panel" style={{ padding: 0, overflow: "hidden" }}>
+            {alerts.map((alert) => (
+              <div key={alert.id} className={`rdo-ai-alert ${alert.status === "unread" ? "rdo-ai-alert-unread" : ""}`} data-testid={`alert-${alert.id}`}>
+                <div className="rdo-ai-alert-content">
+                  <h4 className="rdo-ai-alert-title">{alert.title}</h4>
+                  <p className="rdo-ai-alert-desc">{alert.description}</p>
+                  <div className="rdo-ai-alert-meta">
+                    <span style={{ color: alert.importance === "critical" ? "hsl(var(--red))" : alert.importance === "high" ? "hsl(var(--amber))" : "inherit", fontWeight: 700 }}>
+                      Importancia: {alert.importance}
+                    </span>
+                    <span>·</span>
+                    <span>{new Date(alert.created_at).toLocaleString()}</span>
+                    {alert.competitor_name && (
+                      <>
+                        <span>·</span>
+                        <span>Competidor: {alert.competitor_name}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  {alert.status === "unread" ? (
+                    <button className="rdo-button secondary" style={{ fontSize: 11, minHeight: 28 }} onClick={() => onMark(alert.id, "read")} data-testid={`button-mark-read-${alert.id}`}>Marcar leída</button>
+                  ) : (
+                    <button className="rdo-button ghost" style={{ fontSize: 11, minHeight: 28 }} onClick={() => onMark(alert.id, "unread")} data-testid={`button-mark-unread-${alert.id}`}>Marcar no leída</button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function HistorialIATab({ analyses, loading, error, onRefresh }) {
+  if (loading && !analyses.length) return <div className="rdo-monitor-loading"><div className="rdo-loading-mark" /> Cargando historial...</div>;
+  if (error) return <div className="rdo-monitor-error"><AlertTriangle size={15} /><div><strong>Error al cargar historial</strong><p style={{ margin: "4px 0 0" }}>{error}</p></div></div>;
+
+  return (
+    <>
+      <PageIntro eyebrow="REGISTRO IA" title="Historial de análisis" description="Registro histórico de evaluaciones de inteligencia competitiva." action={<button className="rdo-button secondary" onClick={onRefresh} data-testid="button-refresh-ai-history"><RefreshCw size={14} /> Refrescar</button>} />
+
+      {!analyses.length ? (
+        <EmptyState title="Sin historial" text="Aún no se ha completado ningún análisis." />
+      ) : (
+        <div style={{ marginTop: 24 }}>
+          {analyses.map((analysis) => (
+            <div key={analysis.id} className="rdo-ai-history-card" data-testid={`analysis-${analysis.id}`}>
+              <div className="rdo-ai-history-head">
+                <h4 className="rdo-ai-history-title">Análisis {new Date(analysis.started_at).toLocaleDateString()}</h4>
+                <Badge tone={analysis.status === "success" ? "teal" : analysis.status === "error" ? "red" : "amber"}>{analysis.status}</Badge>
+              </div>
+              <div className="rdo-ai-history-stats">
+                <span><strong>Modelo:</strong> {analysis.model}</span>
+                <span><strong>Gatillo:</strong> {analysis.trigger}</span>
+                <span><strong>Eventos evaluados:</strong> {analysis.event_count}</span>
+                <span><strong>Fuentes:</strong> {analysis.source_evidence_count}</span>
+              </div>
+              {analysis.summary && (
+                <div className="rdo-ai-history-summary">
+                  {analysis.summary}
+                </div>
+              )}
+              {analysis.error_message && (
+                <div className="rdo-ai-history-summary" style={{ backgroundColor: "hsl(var(--red) / .05)", color: "hsl(var(--red))" }}>
+                  {analysis.error_message}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

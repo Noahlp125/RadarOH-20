@@ -728,3 +728,214 @@ export const GetRadarMonitorHistoryResponseItem = zod.object({
 export const GetRadarMonitorHistoryResponse = zod.array(GetRadarMonitorHistoryResponseItem)
 
 
+/**
+ * @summary Read the latest AI insights and alert count
+ */
+export const getRadarAiStatusResponseLatestAnalysisOneSourceEvidenceCountMin = 0;
+
+export const getRadarAiStatusResponseLatestAnalysisOneEventCountMin = 0;
+
+export const getRadarAiStatusResponseLatestAnalysisOneFindingsItemRelevanceMin = 0;
+export const getRadarAiStatusResponseLatestAnalysisOneFindingsItemRelevanceMax = 100;
+
+export const getRadarAiStatusResponseLatestAnalysisOneFindingsItemConfidenceMin = 0;
+export const getRadarAiStatusResponseLatestAnalysisOneFindingsItemConfidenceMax = 100;
+
+export const getRadarAiStatusResponseUnreadAlertsMin = 0;
+
+
+
+export const GetRadarAiStatusResponse = zod.object({
+  "latest_analysis": zod.object({
+  "id": zod.string(),
+  "trigger": zod.enum(['manual', 'scheduler']),
+  "model": zod.string(),
+  "status": zod.enum(['running', 'success', 'error']),
+  "source_evidence_count": zod.number().min(getRadarAiStatusResponseLatestAnalysisOneSourceEvidenceCountMin),
+  "event_count": zod.number().min(getRadarAiStatusResponseLatestAnalysisOneEventCountMin),
+  "summary": zod.string(),
+  "trends": zod.array(zod.record(zod.string(), zod.unknown())),
+  "error_message": zod.string(),
+  "started_at": zod.string(),
+  "completed_at": zod.string().nullable(),
+  "findings": zod.array(zod.object({
+  "id": zod.string(),
+  "change_event_id": zod.string().nullable(),
+  "event_type": zod.string(),
+  "importance": zod.enum(['low', 'medium', 'high', 'critical']),
+  "relevance": zod.number().min(getRadarAiStatusResponseLatestAnalysisOneFindingsItemRelevanceMin).max(getRadarAiStatusResponseLatestAnalysisOneFindingsItemRelevanceMax),
+  "confidence": zod.number().min(getRadarAiStatusResponseLatestAnalysisOneFindingsItemConfidenceMin).max(getRadarAiStatusResponseLatestAnalysisOneFindingsItemConfidenceMax),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "rationale": zod.string(),
+  "opportunity": zod.string(),
+  "risk": zod.string(),
+  "trend": zod.string(),
+  "evidence_ids": zod.array(zod.string()),
+  "suggested_updates": zod.array(zod.record(zod.string(), zod.unknown()))
+}))
+}).nullable(),
+  "unread_alerts": zod.number().min(getRadarAiStatusResponseUnreadAlertsMin),
+  "recent_alerts": zod.array(zod.object({
+  "id": zod.string(),
+  "finding_id": zod.string(),
+  "competitor_id": zod.string().nullable(),
+  "competitor_name": zod.string().nullable(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "importance": zod.enum(['low', 'medium', 'high', 'critical']),
+  "status": zod.enum(['unread', 'read']),
+  "created_at": zod.string(),
+  "read_at": zod.string().nullable()
+}))
+})
+
+
+/**
+ * @summary Analyze stored RadarOH evidence with AI
+ */
+export const runRadarAiAnalysisBodyLimitMax = 50;
+
+
+
+export const RunRadarAiAnalysisBody = zod.object({
+  "limit": zod.number().min(1).max(runRadarAiAnalysisBodyLimitMax).optional(),
+  "source_id": zod.string().optional()
+})
+
+export const runRadarAiAnalysisResponseOneSourceEvidenceCountMin = 0;
+
+export const runRadarAiAnalysisResponseOneEventCountMin = 0;
+
+export const runRadarAiAnalysisResponseOneFindingsItemRelevanceMin = 0;
+export const runRadarAiAnalysisResponseOneFindingsItemRelevanceMax = 100;
+
+export const runRadarAiAnalysisResponseOneFindingsItemConfidenceMin = 0;
+export const runRadarAiAnalysisResponseOneFindingsItemConfidenceMax = 100;
+
+
+
+export const RunRadarAiAnalysisResponse = zod.object({
+  "id": zod.string(),
+  "trigger": zod.enum(['manual', 'scheduler']),
+  "model": zod.string(),
+  "status": zod.enum(['running', 'success', 'error']),
+  "source_evidence_count": zod.number().min(runRadarAiAnalysisResponseOneSourceEvidenceCountMin),
+  "event_count": zod.number().min(runRadarAiAnalysisResponseOneEventCountMin),
+  "summary": zod.string(),
+  "trends": zod.array(zod.record(zod.string(), zod.unknown())),
+  "error_message": zod.string(),
+  "started_at": zod.string(),
+  "completed_at": zod.string().nullable(),
+  "findings": zod.array(zod.object({
+  "id": zod.string(),
+  "change_event_id": zod.string().nullable(),
+  "event_type": zod.string(),
+  "importance": zod.enum(['low', 'medium', 'high', 'critical']),
+  "relevance": zod.number().min(runRadarAiAnalysisResponseOneFindingsItemRelevanceMin).max(runRadarAiAnalysisResponseOneFindingsItemRelevanceMax),
+  "confidence": zod.number().min(runRadarAiAnalysisResponseOneFindingsItemConfidenceMin).max(runRadarAiAnalysisResponseOneFindingsItemConfidenceMax),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "rationale": zod.string(),
+  "opportunity": zod.string(),
+  "risk": zod.string(),
+  "trend": zod.string(),
+  "evidence_ids": zod.array(zod.string()),
+  "suggested_updates": zod.array(zod.record(zod.string(), zod.unknown()))
+}))
+})
+
+
+/**
+ * @summary List previous AI analyses
+ */
+export const listRadarAiAnalysesResponseSourceEvidenceCountMin = 0;
+
+export const listRadarAiAnalysesResponseEventCountMin = 0;
+
+export const listRadarAiAnalysesResponseFindingsItemRelevanceMin = 0;
+export const listRadarAiAnalysesResponseFindingsItemRelevanceMax = 100;
+
+export const listRadarAiAnalysesResponseFindingsItemConfidenceMin = 0;
+export const listRadarAiAnalysesResponseFindingsItemConfidenceMax = 100;
+
+
+
+export const ListRadarAiAnalysesResponseItem = zod.object({
+  "id": zod.string(),
+  "trigger": zod.enum(['manual', 'scheduler']),
+  "model": zod.string(),
+  "status": zod.enum(['running', 'success', 'error']),
+  "source_evidence_count": zod.number().min(listRadarAiAnalysesResponseSourceEvidenceCountMin),
+  "event_count": zod.number().min(listRadarAiAnalysesResponseEventCountMin),
+  "summary": zod.string(),
+  "trends": zod.array(zod.record(zod.string(), zod.unknown())),
+  "error_message": zod.string(),
+  "started_at": zod.string(),
+  "completed_at": zod.string().nullable(),
+  "findings": zod.array(zod.object({
+  "id": zod.string(),
+  "change_event_id": zod.string().nullable(),
+  "event_type": zod.string(),
+  "importance": zod.enum(['low', 'medium', 'high', 'critical']),
+  "relevance": zod.number().min(listRadarAiAnalysesResponseFindingsItemRelevanceMin).max(listRadarAiAnalysesResponseFindingsItemRelevanceMax),
+  "confidence": zod.number().min(listRadarAiAnalysesResponseFindingsItemConfidenceMin).max(listRadarAiAnalysesResponseFindingsItemConfidenceMax),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "rationale": zod.string(),
+  "opportunity": zod.string(),
+  "risk": zod.string(),
+  "trend": zod.string(),
+  "evidence_ids": zod.array(zod.string()),
+  "suggested_updates": zod.array(zod.record(zod.string(), zod.unknown()))
+}))
+})
+export const ListRadarAiAnalysesResponse = zod.array(ListRadarAiAnalysesResponseItem)
+
+
+/**
+ * @summary List AI alerts
+ */
+export const ListRadarAiAlertsResponseItem = zod.object({
+  "id": zod.string(),
+  "finding_id": zod.string(),
+  "competitor_id": zod.string().nullable(),
+  "competitor_name": zod.string().nullable(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "importance": zod.enum(['low', 'medium', 'high', 'critical']),
+  "status": zod.enum(['unread', 'read']),
+  "created_at": zod.string(),
+  "read_at": zod.string().nullable()
+})
+export const ListRadarAiAlertsResponse = zod.array(ListRadarAiAlertsResponseItem)
+
+
+/**
+ * @summary Mark an AI alert as read or unread
+ */
+
+
+
+export const UpdateRadarAiAlertParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const UpdateRadarAiAlertBody = zod.object({
+  "status": zod.enum(['unread', 'read'])
+})
+
+export const UpdateRadarAiAlertResponse = zod.object({
+  "id": zod.string(),
+  "finding_id": zod.string(),
+  "competitor_id": zod.string().nullable(),
+  "competitor_name": zod.string().nullable(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "importance": zod.enum(['low', 'medium', 'high', 'critical']),
+  "status": zod.enum(['unread', 'read']),
+  "created_at": zod.string(),
+  "read_at": zod.string().nullable()
+})
+
+
