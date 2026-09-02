@@ -1,0 +1,480 @@
+import { createHash, randomUUID } from "node:crypto";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { db, type RadarTransaction } from "@workspace/db";
+import {
+  radarCompetitors,
+  radarImports,
+  radarKeywords,
+  radarPlanItems,
+  radarSources,
+  radarWorkspaces,
+} from "@workspace/db";
+import {
+  radarCompetitorSchema,
+  radarCompetitorUpdateSchema,
+  radarImportPayloadSchema,
+  radarKeywordSchema,
+  radarKeywordUpdateSchema,
+  radarPlanItemSchema,
+  radarPlanSchema,
+  radarSourceSchema,
+  radarSourceUpdateSchema,
+  radarStateSchema,
+  type RadarImportPayload,
+  type RadarStateInput,
+} from "./validation";
+
+const configuredWorkspaceId = process.env.RADAR_WORKSPACE_ID;
+
+if (!configuredWorkspaceId) {
+  throw new Error("RADAR_WORKSPACE_ID must be configured for RadarOH.");
+}
+
+export const RADAR_WORKSPACE_ID: string = configuredWorkspaceId;
+
+export type RadarSourceResponse = ReturnType<typeof mapSource>;
+export type RadarCompetitorResponse = ReturnType<typeof mapCompetitor>;
+export type RadarKeywordResponse = ReturnType<typeof mapKeyword>;
+export type RadarPlanItemResponse = ReturnType<typeof mapPlanItem>;
+
+type RadarStateResponse = {
+  workspaceId: string;
+  sources: RadarSourceResponse[];
+  competitors: RadarCompetitorResponse[];
+  keywords: RadarKeywordResponse[];
+  plan: {
+    "30": RadarPlanItemResponse[];
+    "60": RadarPlanItemResponse[];
+    "90": RadarPlanItemResponse[];
+  };
+};
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function mapSource(row: typeof radarSources.$inferSelect) {
+  return {
+    ...asRecord(row.rawRecord),
+    id: row.legacyId,
+    termino: row.termino,
+    tipo: row.tipo,
+    frecuencia: row.frecuencia,
+    notas: row.notas,
+  };
+}
+
+function mapCompetitor(row: typeof radarCompetitors.$inferSelect) {
+  return {
+    ...asRecord(row.rawRecord),
+    id: row.legacyId,
+    nombre: row.nombre,
+    ubicacion: row.ubicacion,
+    especialidad: row.especialidad,
+    rango_precio: row.rangoPrecio,
+    web: row.web,
+    redes: row.redes,
+    fortalezas: row.fortalezas,
+    debilidades: row.debilidades,
+    notas: row.notas,
+    prioridad: row.prioridad,
+    estado: row.estado,
+  };
+}
+
+function mapKeyword(row: typeof radarKeywords.$inferSelect) {
+  return {
+    ...asRecord(row.rawRecord),
+    id: row.legacyId,
+    termino: row.termino,
+    volumen: row.volumen,
+    posicion: row.posicion,
+    notas: row.notas,
+  };
+}
+
+function mapPlanItem(row: typeof radarPlanItems.$inferSelect) {
+  return {
+    ...asRecord(row.rawRecord),
+    id: row.legacyId,
+    text: row.text,
+    done: row.done,
+  };
+}
+
+export async function withRadarTransaction<T>(
+  callback: (tx: RadarTransaction) => Promise<T>,
+): Promise<T> {
+  return db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select set_config('app.workspace_id', ${RADAR_WORKSPACE_ID}, true)`,
+    );
+    await tx
+      .insert(radarWorkspaces)
+      .values({ id: RADAR_WORKSPACE_ID, name: "OH Casas" })
+      .onConflictDoNothing();
+    return callback(tx);
+  });
+}
+
+async function readStateTx(tx: RadarTransaction): Promise<RadarStateResponse> {
+  const [sources, competitors, keywords, planItems] = await Promise.all([
+    tx
+      .select()
+      .from(radarSources)
+      .where(eq(radarSources.workspaceId, RADAR_WORKSPACE_ID))
+      .orderBy(asc(radarSources.createdAt)),
+    tx
+      .select()
+      .from(radarCompetitors)
+      .where(eq(radarCompetitors.workspaceId, RADAR_WORKSPACE_ID))
+      .orderBy(asc(radarCompetitors.createdAt)),
+    tx
+      .select()
+      .from(radarKeywords)
+      .where(eq(radarKeywords.workspaceId, RADAR_WORKSPACE_ID))
+      .orderBy(asc(radarKeywords.createdAt)),
+    tx
+      .select()
+      .from(radarPlanItems)
+      .where(eq(radarPlanItems.workspaceId, RADAR_WORKSPACE_ID))
+      .orderBy(asc(radarPlanItems.createdAt)),
+  ]);
+
+  return {
+    workspaceId: RADAR_WORKSPACE_ID,
+    sources: sources.map(mapSource),
+    competitors: competitors.map(mapCompetitor),
+    keywords: keywords.map(mapKeyword),
+    plan: {
+      "30": planItems.filter((item) => item.horizon === "30").map(mapPlanItem),
+      "60": planItems.filter((item) => item.horizon === "60").map(mapPlanItem),
+      "90": planItems.filter((item) => item.horizon === "90").map(mapPlanItem),
+    },
+  };
+}
+
+export async function readRadarState(): Promise<RadarStateResponse> {
+  return withRadarTransaction(readStateTx);
+}
+
+function normalizedSource(input: unknown) {
+  const parsed = radarSourceSchema.parse(input);
+  const id = parsed.id ?? randomUUID();
+  return {
+    id,
+    legacyId: id,
+    termino: parsed.termino,
+    tipo: parsed.tipo,
+    frecuencia: parsed.frecuencia,
+    notas: parsed.notas,
+    rawRecord: asRecord(input),
+  };
+}
+
+function normalizedCompetitor(input: unknown) {
+  const parsed = radarCompetitorSchema.parse(input);
+  const id = parsed.id ?? randomUUID();
+  return {
+    id,
+    legacyId: id,
+    nombre: parsed.nombre,
+    ubicacion: parsed.ubicacion,
+    especialidad: parsed.especialidad,
+    rangoPrecio: parsed.rango_precio,
+    web: parsed.web,
+    redes: parsed.redes,
+    fortalezas: parsed.fortalezas,
+    debilidades: parsed.debilidades,
+    notas: parsed.notas,
+    prioridad: parsed.prioridad,
+    estado: parsed.estado,
+    rawRecord: asRecord(input),
+  };
+}
+
+function normalizedKeyword(input: unknown) {
+  const parsed = radarKeywordSchema.parse(input);
+  const id = parsed.id ?? randomUUID();
+  return {
+    id,
+    legacyId: id,
+    termino: parsed.termino,
+    volumen: parsed.volumen,
+    posicion: parsed.posicion,
+    notas: parsed.notas,
+    rawRecord: asRecord(input),
+  };
+}
+
+function normalizedPlanItem(input: unknown) {
+  const parsed = radarPlanItemSchema.parse(input);
+  const id = parsed.id ?? randomUUID();
+  return {
+    id,
+    legacyId: id,
+    text: parsed.text,
+    done: parsed.done,
+    rawRecord: asRecord(input),
+  };
+}
+
+async function replaceStateTx(
+  tx: RadarTransaction,
+  input: RadarStateInput,
+): Promise<RadarStateResponse> {
+  const state = radarStateSchema.parse(input);
+  const now = new Date();
+
+  await Promise.all([
+    tx
+      .delete(radarSources)
+      .where(eq(radarSources.workspaceId, RADAR_WORKSPACE_ID)),
+    tx
+      .delete(radarCompetitors)
+      .where(eq(radarCompetitors.workspaceId, RADAR_WORKSPACE_ID)),
+    tx
+      .delete(radarKeywords)
+      .where(eq(radarKeywords.workspaceId, RADAR_WORKSPACE_ID)),
+    tx
+      .delete(radarPlanItems)
+      .where(eq(radarPlanItems.workspaceId, RADAR_WORKSPACE_ID)),
+  ]);
+
+  const sourceRows = state.sources.map((item: unknown) => ({
+    ...normalizedSource(item),
+    workspaceId: RADAR_WORKSPACE_ID,
+    createdAt: now,
+    updatedAt: now,
+  }));
+  const competitorRows = state.competitors.map((item: unknown) => ({
+    ...normalizedCompetitor(item),
+    workspaceId: RADAR_WORKSPACE_ID,
+    createdAt: now,
+    updatedAt: now,
+  }));
+  const keywordRows = state.keywords.map((item: unknown) => ({
+    ...normalizedKeyword(item),
+    workspaceId: RADAR_WORKSPACE_ID,
+    createdAt: now,
+    updatedAt: now,
+  }));
+  const planRows = (["30", "60", "90"] as const).flatMap((horizon) =>
+    state.plan[horizon].map((item: unknown) => ({
+      ...normalizedPlanItem(item),
+      horizon,
+      workspaceId: RADAR_WORKSPACE_ID,
+      createdAt: now,
+      updatedAt: now,
+    })),
+  );
+
+  if (sourceRows.length) await tx.insert(radarSources).values(sourceRows);
+  if (competitorRows.length)
+    await tx.insert(radarCompetitors).values(competitorRows);
+  if (keywordRows.length) await tx.insert(radarKeywords).values(keywordRows);
+  if (planRows.length) await tx.insert(radarPlanItems).values(planRows);
+
+  return readStateTx(tx);
+}
+
+export async function replaceRadarState(
+  input: unknown,
+): Promise<RadarStateResponse> {
+  return withRadarTransaction((tx) => replaceStateTx(tx, radarStateSchema.parse(input)));
+}
+
+export async function importRadarPayload(
+  payloadInput: unknown,
+  sourceFilename?: string,
+): Promise<{ importId: string; state: RadarStateResponse; validation: Record<string, number> }> {
+  const payload = radarImportPayloadSchema.parse(payloadInput);
+  return withRadarTransaction(async (tx) => {
+    const current = await readStateTx(tx);
+    const merged = radarStateSchema.parse({
+      sources: payload.sources ?? current.sources,
+      competitors: payload.competitors ?? current.competitors,
+      keywords: payload.keywords ?? current.keywords,
+      plan: {
+        "30": payload.plan?.["30"] ?? current.plan["30"],
+        "60": payload.plan?.["60"] ?? current.plan["60"],
+        "90": payload.plan?.["90"] ?? current.plan["90"],
+      },
+    });
+    const state = await replaceStateTx(tx, merged);
+    const importId = randomUUID();
+    await tx.insert(radarImports).values({
+      id: importId,
+      workspaceId: RADAR_WORKSPACE_ID,
+      sourceFilename: sourceFilename ?? null,
+      sourceExportedAt: parseExportedAt(payload.exportedAt),
+      sourceChecksum: createHash("sha256")
+        .update(JSON.stringify(payload))
+        .digest("hex"),
+      rawPayload: payload as Record<string, unknown>,
+      recordCounts: {
+        sources: payload.sources?.length ?? 0,
+        competitors: payload.competitors?.length ?? 0,
+        keywords: payload.keywords?.length ?? 0,
+        planItems: countPlanItems(payload.plan),
+      },
+      validationIssues: [],
+    });
+    return {
+      importId,
+      state,
+      validation: {
+        sources: merged.sources.length,
+        competitors: merged.competitors.length,
+        keywords: merged.keywords.length,
+        planItems: countPlanItems(merged.plan),
+      },
+    };
+  });
+}
+
+function countPlanItems(plan: RadarImportPayload["plan"] | RadarStateInput["plan"] | undefined) {
+  if (!plan) return 0;
+  return plan["30"].length + plan["60"].length + plan["90"].length;
+}
+
+function parseExportedAt(value: string | undefined): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export async function createRadarSource(input: unknown) {
+  return withRadarTransaction(async (tx) => {
+    const row = normalizedSource(input);
+    const [created] = await tx.insert(radarSources).values({
+      ...row,
+      workspaceId: RADAR_WORKSPACE_ID,
+    }).returning();
+    return mapSource(created);
+  });
+}
+
+export async function updateRadarSource(id: string, input: unknown) {
+  return withRadarTransaction(async (tx) => {
+    const [existing] = await tx.select().from(radarSources).where(and(
+      eq(radarSources.workspaceId, RADAR_WORKSPACE_ID),
+      eq(radarSources.legacyId, id),
+    ));
+    if (!existing) return null;
+    const patch = radarSourceUpdateSchema.parse(input);
+    const next = radarSourceSchema.parse({ ...mapSource(existing), ...patch, id });
+    const [updated] = await tx.update(radarSources).set({
+      termino: next.termino,
+      tipo: next.tipo,
+      frecuencia: next.frecuencia,
+      notas: next.notas,
+      rawRecord: { ...asRecord(existing.rawRecord), ...asRecord(input) },
+      updatedAt: new Date(),
+    }).where(eq(radarSources.id, existing.id)).returning();
+    return mapSource(updated);
+  });
+}
+
+export async function deleteRadarSource(id: string) {
+  return withRadarTransaction(async (tx) => {
+    const [deleted] = await tx.delete(radarSources).where(and(
+      eq(radarSources.workspaceId, RADAR_WORKSPACE_ID),
+      eq(radarSources.legacyId, id),
+    )).returning({ id: radarSources.id });
+    return Boolean(deleted);
+  });
+}
+
+export async function createRadarCompetitor(input: unknown) {
+  return withRadarTransaction(async (tx) => {
+    const row = normalizedCompetitor(input);
+    const [created] = await tx.insert(radarCompetitors).values({
+      ...row,
+      workspaceId: RADAR_WORKSPACE_ID,
+    }).returning();
+    return mapCompetitor(created);
+  });
+}
+
+export async function updateRadarCompetitor(id: string, input: unknown) {
+  return withRadarTransaction(async (tx) => {
+    const [existing] = await tx.select().from(radarCompetitors).where(and(
+      eq(radarCompetitors.workspaceId, RADAR_WORKSPACE_ID),
+      eq(radarCompetitors.legacyId, id),
+    ));
+    if (!existing) return null;
+    const patch = radarCompetitorUpdateSchema.parse(input);
+    const next = radarCompetitorSchema.parse({ ...mapCompetitor(existing), ...patch, id });
+    const [updated] = await tx.update(radarCompetitors).set({
+      nombre: next.nombre,
+      ubicacion: next.ubicacion,
+      especialidad: next.especialidad,
+      rangoPrecio: next.rango_precio,
+      web: next.web,
+      redes: next.redes,
+      fortalezas: next.fortalezas,
+      debilidades: next.debilidades,
+      notas: next.notas,
+      prioridad: next.prioridad,
+      estado: next.estado,
+      rawRecord: { ...asRecord(existing.rawRecord), ...asRecord(input) },
+      updatedAt: new Date(),
+    }).where(eq(radarCompetitors.id, existing.id)).returning();
+    return mapCompetitor(updated);
+  });
+}
+
+export async function deleteRadarCompetitor(id: string) {
+  return withRadarTransaction(async (tx) => {
+    const [deleted] = await tx.delete(radarCompetitors).where(and(
+      eq(radarCompetitors.workspaceId, RADAR_WORKSPACE_ID),
+      eq(radarCompetitors.legacyId, id),
+    )).returning({ id: radarCompetitors.id });
+    return Boolean(deleted);
+  });
+}
+
+export async function createRadarKeyword(input: unknown) {
+  return withRadarTransaction(async (tx) => {
+    const row = normalizedKeyword(input);
+    const [created] = await tx.insert(radarKeywords).values({
+      ...row,
+      workspaceId: RADAR_WORKSPACE_ID,
+    }).returning();
+    return mapKeyword(created);
+  });
+}
+
+export async function updateRadarKeyword(id: string, input: unknown) {
+  return withRadarTransaction(async (tx) => {
+    const [existing] = await tx.select().from(radarKeywords).where(and(
+      eq(radarKeywords.workspaceId, RADAR_WORKSPACE_ID),
+      eq(radarKeywords.legacyId, id),
+    ));
+    if (!existing) return null;
+    const patch = radarKeywordUpdateSchema.parse(input);
+    const next = radarKeywordSchema.parse({ ...mapKeyword(existing), ...patch, id });
+    const [updated] = await tx.update(radarKeywords).set({
+      termino: next.termino,
+      volumen: next.volumen,
+      posicion: next.posicion,
+      notas: next.notas,
+      rawRecord: { ...asRecord(existing.rawRecord), ...asRecord(input) },
+      updatedAt: new Date(),
+    }).where(eq(radarKeywords.id, existing.id)).returning();
+    return mapKeyword(updated);
+  });
+}
+
+export async function deleteRadarKeyword(id: string) {
+  return withRadarTransaction(async (tx) => {
+    const [deleted] = await tx.delete(radarKeywords).where(and(
+      eq(radarKeywords.workspaceId, RADAR_WORKSPACE_ID),
+      eq(radarKeywords.legacyId, id),
+    )).returning({ id: radarKeywords.id });
+    return Boolean(deleted);
+  });
+}

@@ -1,0 +1,1 @@
+- [RadarOH build environment](radaroh-build-environment.md) — managed workflows inject both `PORT` and `BASE_PATH`; direct Vite builds need both explicitly.

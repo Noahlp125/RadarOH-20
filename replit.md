@@ -27,18 +27,22 @@ Plataforma centralizada de inteligencia competitiva y monitorización digital pa
 
 - `artifacts/radar-oh` — web artifact for the RadarOH product
 - `artifacts/radar-oh/src/legacy/App.jsx` — synchronized functional UI carried over from the original RadarOH
+- `artifacts/radar-oh/src/data/radarApi.ts` — generated API client boundary for central persistence
 - `artifacts/radar-oh/docs/radar-oh-fase-1.md` — Phase 1 source-of-truth and preservation decisions
+- `artifacts/radar-oh/docs/radar-oh-fase-2.md` — Phase 2 persistence, migration, security and verification record
 - `artifacts/radar-oh/docs/legacy-radar-oh-main-App.jsx` — preserved copy of the original `main` source
+- `scripts/src/migrate-radar.ts` — repeatable JSON-to-API migration utility
 - `.conversation/attached_assets/` — preserved original JSON and screenshots
-- `artifacts/api-server` — existing API service, not yet connected to RadarOH domain data
-- `lib/api-spec/openapi.yaml` — existing API contract, unchanged in Phase 1
-- `lib/db/src/schema/` — existing Drizzle schema location, unchanged in Phase 1
+- `artifacts/api-server` — modular API service with RadarOH state, import and CRUD routes
+- `lib/api-spec/openapi.yaml` — contract-first RadarOH API specification
+- `lib/db/src/schema/` — Drizzle schema for normalized RadarOH data and raw snapshots
 
 ## Architecture decisions
 
-- Phase 1 keeps localStorage and the current JSON shape; PostgreSQL/API centralization is deferred to later approved phases.
+- Phase 1 kept localStorage and the current JSON shape; Phase 2 adds PostgreSQL/API persistence without removing that compatibility layer.
+- PostgreSQL is the managed Replit database for this phase; no external Supabase connection is configured.
 - The published `gh-pages` behavior is the functional reference because it includes JSON import/export and matches the supplied captures.
-- The original source is preserved; the synchronized UI remains isolated under `src/legacy` until modularization is approved.
+- The original source is preserved; the synchronized UI remains under `src/legacy` while its persistence boundary is now isolated in `src/data`.
 - Original JSON files are never silently corrected, overwritten, or deleted.
 
 ## Product
@@ -56,7 +60,7 @@ No preferences recorded.
 ## Gotchas
 
 - Direct Vite builds require the workflow-provided `PORT` and `BASE_PATH`; use the managed RadarOH workflow for preview verification.
-- Do not create the PostgreSQL schema or monitoring worker before the current phase is explicitly approved.
+- Do not create a monitoring worker before a later phase is explicitly approved.
 - Do not remove the preserved JSON or legacy source snapshots.
 
 ## Pointers

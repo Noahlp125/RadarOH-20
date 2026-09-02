@@ -23,6 +23,11 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import {
+  fetchRadarState,
+  importRadarSnapshot,
+  saveRadarState,
+} from "../data/radarApi";
 
 const KEYS = {
   sources: "radar-oh:sources",
@@ -74,6 +79,8 @@ const emptyKeyword = () => ({ id: uid(), termino: "", volumen: "Medio", posicion
 
 export default function RadarOH() {
   const [loading, setLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState("connecting");
+  const [syncError, setSyncError] = useState("");
   const [tab, setTab] = useState("resumen");
   const [sources, setSources] = useState([]);
   const [competitors, setCompetitors] = useState([]);
@@ -87,6 +94,7 @@ export default function RadarOH() {
   const importInputRef = useRef(null);
 
   useEffect(() => {
+    let active = true;
     (async () => {
       const [s, c, k, p] = await Promise.all([
         loadKey(KEYS.sources),
@@ -94,19 +102,65 @@ export default function RadarOH() {
         loadKey(KEYS.keywords),
         loadKey(KEYS.plan),
       ]);
-      if (Array.isArray(s)) setSources(s);
-      if (Array.isArray(c)) setCompetitors(c);
-      if (Array.isArray(k)) setKeywords(k);
-      if (p && typeof p === "object" && !Array.isArray(p)) {
-        setPlan({ "30": [], "60": [], "90": [], ...p });
+      const localState = {
+        sources: Array.isArray(s) ? s : [],
+        competitors: Array.isArray(c) ? c : [],
+        keywords: Array.isArray(k) ? k : [],
+        plan: p && typeof p === "object" && !Array.isArray(p) ? { "30": [], "60": [], "90": [], ...p } : { "30": [], "60": [], "90": [] },
+      };
+      const hasLocalData = localState.sources.length || localState.competitors.length || localState.keywords.length ||
+        HORIZONTES.some((horizon) => localState.plan[horizon]?.length);
+      try {
+        const remote = await fetchRadarState();
+        if (!active) return;
+        let nextState = {
+          sources: remote.sources || [],
+          competitors: remote.competitors || [],
+          keywords: remote.keywords || [],
+          plan: remote.plan || { "30": [], "60": [], "90": [] },
+        };
+        const remoteIsEmpty = !nextState.sources.length && !nextState.competitors.length && !nextState.keywords.length &&
+          !HORIZONTES.some((horizon) => nextState.plan[horizon]?.length);
+        if (remoteIsEmpty && hasLocalData) {
+          const migrated = await importRadarSnapshot(localState, "localStorage-migration.json");
+          nextState = migrated.state;
+        }
+        setSources(nextState.sources);
+        setCompetitors(nextState.competitors);
+        setKeywords(nextState.keywords);
+        setPlan({ "30": [], "60": [], "90": [], ...nextState.plan });
+        setSyncStatus("remote");
+        setSyncError("");
+      } catch (error) {
+        if (!active) return;
+        setSources(localState.sources);
+        setCompetitors(localState.competitors);
+        setKeywords(localState.keywords);
+        setPlan(localState.plan);
+        setSyncStatus("local");
+        setSyncError("La persistencia central no está disponible. Los cambios se guardan temporalmente en este navegador.");
       }
       setLoading(false);
     })();
+    return () => { active = false; };
   }, []);
   useEffect(() => { if (!loading) saveKey(KEYS.sources, sources); }, [sources, loading]);
   useEffect(() => { if (!loading) saveKey(KEYS.competitors, competitors); }, [competitors, loading]);
   useEffect(() => { if (!loading) saveKey(KEYS.keywords, keywords); }, [keywords, loading]);
   useEffect(() => { if (!loading) saveKey(KEYS.plan, plan); }, [plan, loading]);
+  useEffect(() => {
+    if (loading || syncStatus !== "remote") return undefined;
+    const timer = window.setTimeout(async () => {
+      try {
+        await saveRadarState({ sources, competitors, keywords, plan });
+        setSyncError("");
+      } catch {
+        setSyncStatus("local");
+        setSyncError("Se perdió la conexión con PostgreSQL. Los cambios siguen guardados localmente hasta recuperar la conexión.");
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [sources, competitors, keywords, plan, loading, syncStatus]);
 
   const planTotal = HORIZONTES.reduce((total, horizon) => total + (plan[horizon] || []).length, 0);
   const planDone = HORIZONTES.reduce(
@@ -138,7 +192,8 @@ export default function RadarOH() {
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
+      let nextState = null;
       try {
         const parsed = JSON.parse(reader.result);
         const collectionKeys = ["sources", "competitors", "keywords"];
@@ -159,12 +214,39 @@ export default function RadarOH() {
         }
         if ((sources.length || competitors.length || keywords.length || planTotal) &&
           !window.confirm("La importación sustituirá los datos actuales. ¿Continuar?")) return;
-        if (parsed.sources !== undefined) setSources(parsed.sources);
-        if (parsed.competitors !== undefined) setCompetitors(parsed.competitors);
-        if (parsed.keywords !== undefined) setKeywords(parsed.keywords);
-        if (parsed.plan !== undefined) setPlan({ "30": [], "60": [], "90": [], ...parsed.plan });
+        nextState = {
+          sources: parsed.sources !== undefined ? parsed.sources : sources,
+          competitors: parsed.competitors !== undefined ? parsed.competitors : competitors,
+          keywords: parsed.keywords !== undefined ? parsed.keywords : keywords,
+          plan: parsed.plan !== undefined ? { "30": [], "60": [], "90": [], ...parsed.plan } : plan,
+        };
+        const result = await importRadarSnapshot(parsed, file.name);
+        setSources(result.state.sources);
+        setCompetitors(result.state.competitors);
+        setKeywords(result.state.keywords);
+        setPlan({ "30": [], "60": [], "90": [], ...result.state.plan });
+        setSyncStatus("remote");
+        setSyncError("");
         window.alert("Datos importados correctamente.");
       } catch (error) {
+        if (error instanceof SyntaxError) {
+          window.alert("El archivo no es un JSON válido.");
+          return;
+        }
+        if (error instanceof Error && error.message.startsWith("La raíz") || error instanceof Error && error.message.startsWith("El campo")) {
+          window.alert(error.message);
+          return;
+        }
+        if (nextState && (error instanceof TypeError || error instanceof Error && error.message.includes("fetch"))) {
+          setSyncStatus("local");
+          setSyncError("No se pudo sincronizar la importación. Se conserva solo en este navegador.");
+          setSources(nextState.sources);
+          setCompetitors(nextState.competitors);
+          setKeywords(nextState.keywords);
+          setPlan(nextState.plan);
+          window.alert("La importación se guardó localmente, pero PostgreSQL no está disponible.");
+          return;
+        }
         window.alert(error instanceof Error ? error.message : "El archivo no es válido.");
       }
     };
@@ -195,6 +277,7 @@ export default function RadarOH() {
             </div>
           </header>
           <main className="rdo-content">
+            {syncStatus !== "remote" && syncError && <div className={`rdo-sync-banner ${syncStatus === "local" ? "warning" : ""}`} role="status"><span className="rdo-sync-dot" /><span>{syncStatus === "connecting" ? "Conectando con PostgreSQL…" : syncError}</span></div>}
             <div className="rdo-utility">
               <button className="rdo-button secondary" onClick={exportData} data-testid="button-export-data"><Download size={14} /> Exportar datos</button>
               <button className="rdo-button secondary" onClick={() => importInputRef.current?.click()} data-testid="button-import-data"><Upload size={14} /> Importar datos</button>

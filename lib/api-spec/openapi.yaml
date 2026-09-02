@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: radar
+    description: RadarOH persistence and migration operations
 paths:
   /healthz:
     get:
@@ -24,7 +26,280 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /radar/state:
+    get:
+      operationId: getRadarState
+      tags: [radar]
+      summary: Read the RadarOH workspace
+      responses:
+        "200":
+          description: Current normalized workspace state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarState"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    put:
+      operationId: replaceRadarState
+      tags: [radar]
+      summary: Replace the normalized RadarOH workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RadarStateInput"
+      responses:
+        "200":
+          description: Persisted normalized workspace state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarState"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /radar/import:
+    post:
+      operationId: importRadarData
+      tags: [radar]
+      summary: Import and preserve a RadarOH JSON snapshot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RadarImportRequest"
+      responses:
+        "201":
+          description: Imported and validated workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarImportResult"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /radar/sources:
+    post:
+      operationId: createRadarSource
+      tags: [radar]
+      summary: Create a source
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RadarSourceInput"
+      responses:
+        "201":
+          description: Created source
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarSource"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /radar/sources/{id}:
+    patch:
+      operationId: updateRadarSource
+      tags: [radar]
+      summary: Update a source
+      parameters:
+        - $ref: "#/components/parameters/RadarId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RadarSourceUpdate"
+      responses:
+        "200":
+          description: Updated source
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarSource"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    delete:
+      operationId: deleteRadarSource
+      tags: [radar]
+      summary: Delete a source
+      parameters:
+        - $ref: "#/components/parameters/RadarId"
+      responses:
+        "204":
+          description: Source deleted
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /radar/competitors:
+    post:
+      operationId: createRadarCompetitor
+      tags: [radar]
+      summary: Create a competitor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RadarCompetitorInput"
+      responses:
+        "201":
+          description: Created competitor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarCompetitor"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /radar/competitors/{id}:
+    patch:
+      operationId: updateRadarCompetitor
+      tags: [radar]
+      summary: Update a competitor
+      parameters:
+        - $ref: "#/components/parameters/RadarId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RadarCompetitorUpdate"
+      responses:
+        "200":
+          description: Updated competitor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarCompetitor"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    delete:
+      operationId: deleteRadarCompetitor
+      tags: [radar]
+      summary: Delete a competitor
+      parameters:
+        - $ref: "#/components/parameters/RadarId"
+      responses:
+        "204":
+          description: Competitor deleted
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /radar/keywords:
+    post:
+      operationId: createRadarKeyword
+      tags: [radar]
+      summary: Create a keyword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RadarKeywordInput"
+      responses:
+        "201":
+          description: Created keyword
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarKeyword"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /radar/keywords/{id}:
+    patch:
+      operationId: updateRadarKeyword
+      tags: [radar]
+      summary: Update a keyword
+      parameters:
+        - $ref: "#/components/parameters/RadarId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RadarKeywordUpdate"
+      responses:
+        "200":
+          description: Updated keyword
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarKeyword"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    delete:
+      operationId: deleteRadarKeyword
+      tags: [radar]
+      summary: Delete a keyword
+      parameters:
+        - $ref: "#/components/parameters/RadarId"
+      responses:
+        "204":
+          description: Keyword deleted
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
 components:
+  parameters:
+    RadarId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  responses:
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +308,205 @@ components:
           type: string
       required:
         - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    RadarSource:
+      type: object
+      additionalProperties: true
+      required: [id, termino, tipo, frecuencia, notas]
+      properties:
+        id: { type: string }
+        termino: { type: string }
+        tipo: { type: string }
+        frecuencia: { type: string }
+        notas: { type: string }
+    RadarSourceInput:
+      type: object
+      additionalProperties: true
+      required: [termino, tipo, frecuencia, notas]
+      properties:
+        id: { type: string }
+        termino: { type: string }
+        tipo: { type: string }
+        frecuencia: { type: string }
+        notas: { type: string }
+    RadarSourceUpdate:
+      type: object
+      additionalProperties: true
+      properties:
+        termino: { type: string }
+        tipo: { type: string }
+        frecuencia: { type: string }
+        notas: { type: string }
+    RadarCompetitor:
+      type: object
+      additionalProperties: true
+      required: [id, nombre, ubicacion, especialidad, rango_precio, web, redes, fortalezas, debilidades, notas, prioridad, estado]
+      properties:
+        id: { type: string }
+        nombre: { type: string }
+        ubicacion: { type: string }
+        especialidad: { type: string }
+        rango_precio: { type: string }
+        web: { type: string }
+        redes: { type: string }
+        fortalezas: { type: string }
+        debilidades: { type: string }
+        notas: { type: string }
+        prioridad: { type: string }
+        estado: { type: string }
+    RadarCompetitorInput:
+      type: object
+      additionalProperties: true
+      required: [nombre, ubicacion, especialidad, rango_precio, web, redes, fortalezas, debilidades, notas, prioridad, estado]
+      properties:
+        id: { type: string }
+        nombre: { type: string }
+        ubicacion: { type: string }
+        especialidad: { type: string }
+        rango_precio: { type: string }
+        web: { type: string }
+        redes: { type: string }
+        fortalezas: { type: string }
+        debilidades: { type: string }
+        notas: { type: string }
+        prioridad: { type: string }
+        estado: { type: string }
+    RadarCompetitorUpdate:
+      type: object
+      additionalProperties: true
+      properties:
+        nombre: { type: string }
+        ubicacion: { type: string }
+        especialidad: { type: string }
+        rango_precio: { type: string }
+        web: { type: string }
+        redes: { type: string }
+        fortalezas: { type: string }
+        debilidades: { type: string }
+        notas: { type: string }
+        prioridad: { type: string }
+        estado: { type: string }
+    RadarKeyword:
+      type: object
+      additionalProperties: true
+      required: [id, termino, volumen, posicion, notas]
+      properties:
+        id: { type: string }
+        termino: { type: string }
+        volumen: { type: string }
+        posicion: { type: string }
+        notas: { type: string }
+    RadarKeywordInput:
+      type: object
+      additionalProperties: true
+      required: [termino, volumen, posicion, notas]
+      properties:
+        id: { type: string }
+        termino: { type: string }
+        volumen: { type: string }
+        posicion: { type: string }
+        notas: { type: string }
+    RadarKeywordUpdate:
+      type: object
+      additionalProperties: true
+      properties:
+        termino: { type: string }
+        volumen: { type: string }
+        posicion: { type: string }
+        notas: { type: string }
+    RadarPlanItem:
+      type: object
+      additionalProperties: true
+      required: [id, text, done]
+      properties:
+        id: { type: string }
+        text: { type: string }
+        done: { type: boolean }
+    RadarPlan:
+      type: object
+      required: ["30", "60", "90"]
+      properties:
+        "30":
+          type: array
+          items: { $ref: "#/components/schemas/RadarPlanItem" }
+        "60":
+          type: array
+          items: { $ref: "#/components/schemas/RadarPlanItem" }
+        "90":
+          type: array
+          items: { $ref: "#/components/schemas/RadarPlanItem" }
+    RadarState:
+      type: object
+      required: [workspaceId, sources, competitors, keywords, plan]
+      properties:
+        workspaceId: { type: string }
+        sources:
+          type: array
+          items: { $ref: "#/components/schemas/RadarSource" }
+        competitors:
+          type: array
+          items: { $ref: "#/components/schemas/RadarCompetitor" }
+        keywords:
+          type: array
+          items: { $ref: "#/components/schemas/RadarKeyword" }
+        plan:
+          $ref: "#/components/schemas/RadarPlan"
+    RadarStateInput:
+      type: object
+      required: [sources, competitors, keywords, plan]
+      properties:
+        sources:
+          type: array
+          items: { $ref: "#/components/schemas/RadarSourceInput" }
+        competitors:
+          type: array
+          items: { $ref: "#/components/schemas/RadarCompetitorInput" }
+        keywords:
+          type: array
+          items: { $ref: "#/components/schemas/RadarKeywordInput" }
+        plan:
+          $ref: "#/components/schemas/RadarPlan"
+    RadarImportRequest:
+      type: object
+      required: [payload]
+      properties:
+        sourceFilename: { type: string }
+        payload:
+          type: object
+          additionalProperties: true
+          properties:
+            sources:
+              type: array
+              items: { $ref: "#/components/schemas/RadarSourceInput" }
+            competitors:
+              type: array
+              items: { $ref: "#/components/schemas/RadarCompetitorInput" }
+            keywords:
+              type: array
+              items: { $ref: "#/components/schemas/RadarKeywordInput" }
+            plan:
+              $ref: "#/components/schemas/RadarPlan"
+            exportedAt: { type: string }
+    RadarValidationSummary:
+      type: object
+      required: [sources, competitors, keywords, planItems]
+      properties:
+        sources: { type: number }
+        competitors: { type: number }
+        keywords: { type: number }
+        planItems: { type: number }
+    RadarImportResult:
+      type: object
+      required: [importId, state, validation]
+      properties:
+        importId: { type: string }
+        state:
+          $ref: "#/components/schemas/RadarState"
+        validation:
+          $ref: "#/components/schemas/RadarValidationSummary"
 
