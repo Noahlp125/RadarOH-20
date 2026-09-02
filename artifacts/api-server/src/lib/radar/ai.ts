@@ -12,49 +12,20 @@ import {
   radarSources,
 } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { z } from "zod";
 import { logger } from "../logger";
 import { RADAR_WORKSPACE_ID, withRadarTransaction } from "./repository";
+import {
+  requestValidatedAiOutput,
+  resolveAiRequestAudit,
+  shouldCreateAiAlert,
+  type AiOutput,
+  type AiRequestAudit,
+} from "./ai-validation";
 
 const MODEL = "gpt-5.6-terra";
 const AI_INTERVAL_MS = 5 * 60_000;
 let aiScheduler: NodeJS.Timeout | null = null;
 let analysisRunning = false;
-
-const suggestedUpdateSchema = z.object({
-  competitor_id: z.string(),
-  field: z.enum(["ubicacion", "especialidad", "rango_precio", "web", "redes", "fortalezas", "debilidades", "notas"]),
-  value: z.string().min(1).max(1500),
-  evidence_ids: z.array(z.string()).min(1),
-});
-
-const aiOutputSchema = z.object({
-  summary: z.string().min(1).max(5000),
-  trends: z.array(z.object({
-    name: z.string().min(1).max(255),
-    direction: z.enum(["emerging", "growing", "stable", "declining"]),
-    description: z.string().min(1).max(1500),
-    confidence: z.number().int().min(0).max(100),
-    evidence_ids: z.array(z.string()).min(1),
-  })).max(12),
-  findings: z.array(z.object({
-    change_event_id: z.string(),
-    event_type: z.enum(["launch", "pricing", "content", "reputation", "expansion", "technology", "regulatory", "market", "other"]),
-    importance: z.enum(["low", "medium", "high", "critical"]),
-    relevance: z.number().int().min(0).max(100),
-    confidence: z.number().int().min(0).max(100),
-    title: z.string().min(1).max(255),
-    summary: z.string().min(1).max(2000),
-    rationale: z.string().min(1).max(2000),
-    opportunity: z.string().max(1500).default(""),
-    risk: z.string().max(1500).default(""),
-    trend: z.string().max(500).default(""),
-    evidence_ids: z.array(z.string()).min(1),
-    suggested_updates: z.array(suggestedUpdateSchema).max(8).default([]),
-    alert: z.boolean().default(false),
-  })).max(50),
-});
-
 export class NoEvidenceForAnalysisError extends Error {}
 export class AiAnalysisNotFoundError extends Error {}
 
@@ -69,6 +40,7 @@ export async function runRadarAiAnalysis(options: {
   analysisRunning = true;
   const analysisId = randomUUID();
   const startedAt = new Date();
+  let completedRequestAudit: AiRequestAudit | undefined;
   try {
     const evidence = await loadUnanalyzedEvidence(options.limit ?? 25, options.sourceLegacyId);
     if (!evidence.length) {
@@ -87,30 +59,27 @@ export async function runRadarAiAnalysis(options: {
       }),
     );
     logger.info({ analysisId, evidenceCount: evidence.length, model: MODEL }, "RadarOH AI analysis started");
-    const result = await requestAnalysis(evidence);
-    const allowedEvidenceIds = new Set(evidence.map((item) => item.evidence_id));
-    const allowedEventIds = new Set(evidence.map((item) => item.change_event_id));
-    const validFindings = result.findings.filter(
-      (finding) =>
-        allowedEventIds.has(finding.change_event_id) &&
-        finding.evidence_ids.length > 0 &&
-        finding.evidence_ids.every((id) => allowedEvidenceIds.has(id)),
-    );
-    const validTrends = result.trends.filter(
-      (trend) => trend.evidence_ids.every((id) => allowedEvidenceIds.has(id)),
-    );
+    const requestResult = await requestAnalysis(evidence);
+    completedRequestAudit = {
+      attemptCount: requestResult.attemptCount,
+      attemptErrors: requestResult.attemptErrors,
+    };
+    const result = requestResult.output;
     const mapped = await persistAnalysis(
       analysisId,
       result.summary,
-      validTrends,
-      validFindings,
+      result.summary_evidence_ids,
+      result.trends,
+      result.findings,
       evidence,
+      requestResult.attemptCount,
+      requestResult.attemptErrors,
     );
-    logger.info({ analysisId, findings: validFindings.length, trends: validTrends.length }, "RadarOH AI analysis completed");
+    logger.info({ analysisId, findings: result.findings.length, trends: result.trends.length }, "RadarOH AI analysis completed");
     return mapped;
   } catch (error) {
     if (!(error instanceof NoEvidenceForAnalysisError)) {
-      await markAnalysisFailed(analysisId, startedAt, error);
+      await markAnalysisFailed(analysisId, startedAt, error, completedRequestAudit);
       logger.error({ err: error, analysisId }, "RadarOH AI analysis failed");
     }
     throw error;
@@ -286,9 +255,8 @@ async function loadUnanalyzedEvidence(limit: number, sourceLegacyId?: string) {
 }
 
 async function requestAnalysis(evidence: Awaited<ReturnType<typeof loadUnanalyzedEvidence>>) {
-  let lastError: unknown;
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    try {
+  return requestValidatedAiOutput(
+    async () => {
       const response = await openai.chat.completions.create({
         model: MODEL,
         max_completion_tokens: 8192,
@@ -302,7 +270,8 @@ async function requestAnalysis(evidence: Awaited<ReturnType<typeof loadUnanalyze
               "Toda afirmación debe estar respaldada por evidence_ids exactos del input.",
               "Si una evidencia es ambigua, reduce confidence y explica la limitación.",
               "No sugieras actualizar una ficha salvo que el valor aparezca explícitamente en la evidencia.",
-              "Devuelve solo JSON válido con: summary, trends y findings.",
+              "Devuelve solo JSON válido con: summary, summary_evidence_ids, trends y findings.",
+              "summary_evidence_ids debe citar las evidencias exactas que respaldan el resumen.",
               "Cada finding: change_event_id, event_type, importance, relevance 0-100, confidence 0-100, title, summary, rationale, opportunity, risk, trend, evidence_ids, suggested_updates, alert.",
               "Tipos: launch, pricing, content, reputation, expansion, technology, regulatory, market, other.",
               "Importancia: low, medium, high, critical.",
@@ -318,21 +287,21 @@ async function requestAnalysis(evidence: Awaited<ReturnType<typeof loadUnanalyze
       });
       const content = response.choices[0]?.message?.content;
       if (!content) throw new Error("La IA no devolvió contenido.");
-      return aiOutputSchema.parse(JSON.parse(content));
-    } catch (error) {
-      lastError = error;
-      if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** (attempt - 1)));
-    }
-  }
-  throw lastError;
+      return content;
+    },
+    evidence,
+  );
 }
 
 async function persistAnalysis(
   analysisId: string,
   summary: string,
-  trends: z.infer<typeof aiOutputSchema>["trends"],
-  findings: z.infer<typeof aiOutputSchema>["findings"],
+  summaryEvidenceIds: string[],
+  trends: AiOutput["trends"],
+  findings: AiOutput["findings"],
   evidence: Awaited<ReturnType<typeof loadUnanalyzedEvidence>>,
+  attemptCount: number,
+  attemptErrors: { attempt: number; error: string }[],
 ) {
   return withRadarTransaction(async (tx) => {
     const [preferences] = await tx
@@ -348,6 +317,7 @@ async function persistAnalysis(
     const minimumImportanceRank = importanceRank[preferences?.minimumImportance ?? "high"] ?? 2;
     const evidenceMap = new Map(evidence.map((item) => [item.change_event_id, item]));
     const findingRows = [];
+    const alertKeys = new Set<string>();
     for (const finding of findings) {
       const source = evidenceMap.get(finding.change_event_id);
       if (!source) continue;
@@ -374,13 +344,16 @@ async function persistAnalysis(
         })
         .returning();
       findingRows.push(row);
+      const alertKey = finding.change_event_id;
       if (
-        finding.alert &&
+        shouldCreateAiAlert(finding, confidence, {
+          minimumImportanceRank,
+          minimumRelevance,
+          minimumConfidence,
+        }) &&
         alertEnabled &&
         internalEnabled &&
-        (importanceRank[finding.importance] ?? 0) >= minimumImportanceRank &&
-        finding.relevance >= minimumRelevance &&
-        confidence >= minimumConfidence
+        !alertKeys.has(alertKey)
       ) {
         const [event] = await tx
           .select()
@@ -395,7 +368,9 @@ async function persistAnalysis(
           title: finding.title,
           description: finding.summary,
           importance: finding.importance,
-        });
+          dedupeKey: alertKey,
+        }).onConflictDoNothing();
+        alertKeys.add(alertKey);
       }
     }
     const completedAt = new Date();
@@ -404,7 +379,10 @@ async function persistAnalysis(
       .set({
         status: "success",
         summary,
+        evidenceIds: summaryEvidenceIds,
         trends,
+        attemptCount,
+        attemptErrors,
         completedAt,
         errorMessage: "",
       })
@@ -422,8 +400,14 @@ async function persistAnalysis(
   });
 }
 
-async function markAnalysisFailed(analysisId: string, startedAt: Date, error: unknown) {
+async function markAnalysisFailed(
+  analysisId: string,
+  startedAt: Date,
+  error: unknown,
+  completedRequestAudit?: AiRequestAudit,
+) {
   const message = error instanceof Error ? error.message : "Error de análisis de IA.";
+  const { attemptCount, attemptErrors } = resolveAiRequestAudit(error, completedRequestAudit);
   await withRadarTransaction(async (tx) => {
     const existing = await tx
       .select({ id: radarAiAnalyses.id })
@@ -440,11 +424,19 @@ async function markAnalysisFailed(analysisId: string, startedAt: Date, error: un
         startedAt,
         completedAt: new Date(),
         errorMessage: message,
+        attemptCount,
+        attemptErrors,
       });
     } else {
       await tx
         .update(radarAiAnalyses)
-        .set({ status: "error", completedAt: new Date(), errorMessage: message })
+        .set({
+          status: "error",
+          completedAt: new Date(),
+          errorMessage: message,
+          attemptCount,
+          attemptErrors,
+        })
         .where(eq(radarAiAnalyses.id, analysisId));
     }
   });
@@ -462,7 +454,10 @@ function mapAnalysis(
     source_evidence_count: analysis.sourceEvidenceCount,
     event_count: analysis.eventCount,
     summary: analysis.summary,
+    evidence_ids: Array.isArray(analysis.evidenceIds) ? analysis.evidenceIds : [],
     trends: Array.isArray(analysis.trends) ? analysis.trends : [],
+    attempt_count: analysis.attemptCount,
+    attempt_errors: Array.isArray(analysis.attemptErrors) ? analysis.attemptErrors : [],
     error_message: analysis.errorMessage,
     started_at: analysis.startedAt.toISOString(),
     completed_at: analysis.completedAt?.toISOString() ?? null,

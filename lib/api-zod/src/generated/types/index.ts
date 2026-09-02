@@ -20,6 +20,7 @@ export * from './radarAiAlertStatus';
 export * from './radarAiAlertUpdate';
 export * from './radarAiAlertUpdateStatus';
 export * from './radarAiAnalysis';
+export * from './radarAiAnalysisAttemptErrorsItem';
 export * from './radarAiAnalysisRequest';
 export * from './radarAiAnalysisResponse';
 export * from './radarAiAnalysisStatus';

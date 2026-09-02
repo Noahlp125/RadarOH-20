@@ -5,6 +5,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { radarAiFindings } from "./ai-findings";
 import { radarCompetitors } from "./competitors";
@@ -20,12 +21,14 @@ export const radarAiAlerts = pgTable(
     title: text("title").notNull(),
     description: text("description").notNull(),
     importance: text("importance").notNull(),
+    dedupeKey: text("dedupe_key"),
     status: text("status").notNull().default("unread"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     readAt: timestamp("read_at", { withTimezone: true }),
   },
   (table) => [
     index("radar_ai_alerts_workspace_status_idx").on(table.workspaceId, table.status, table.createdAt),
+    uniqueIndex("radar_ai_alerts_workspace_dedupe_key_idx").on(table.workspaceId, table.dedupeKey),
     pgPolicy("radar_ai_alert_access", {
       as: "permissive",
       for: "all",

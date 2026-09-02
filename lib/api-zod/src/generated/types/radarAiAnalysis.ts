@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { RadarAiAnalysisAttemptErrorsItem } from './radarAiAnalysisAttemptErrorsItem';
 import type { RadarAiAnalysisStatus } from './radarAiAnalysisStatus';
 import type { RadarAiAnalysisTrendsItem } from './radarAiAnalysisTrendsItem';
 import type { RadarAiAnalysisTrigger } from './radarAiAnalysisTrigger';
@@ -20,7 +21,11 @@ export interface RadarAiAnalysis {
   /** @minimum 0 */
   event_count: number;
   summary: string;
+  evidence_ids: string[];
   trends: RadarAiAnalysisTrendsItem[];
+  /** @minimum 0 */
+  attempt_count: number;
+  attempt_errors: RadarAiAnalysisAttemptErrorsItem[];
   error_message: string;
   started_at: string;
   completed_at: string | null;

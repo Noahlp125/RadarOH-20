@@ -415,6 +415,11 @@ export const RadarAiAnalysisStatus = {
 
 export type RadarAiAnalysisTrendsItem = { [key: string]: unknown };
 
+export type RadarAiAnalysisAttemptErrorsItem = {
+  /** @minimum 1 */
+  attempt: number;
+  error: string;
+};
 export interface RadarAiAnalysis {
   id: string;
   trigger: RadarAiAnalysisTrigger;
@@ -425,7 +430,11 @@ export interface RadarAiAnalysis {
   /** @minimum 0 */
   event_count: number;
   summary: string;
+  evidence_ids: string[];
   trends: RadarAiAnalysisTrendsItem[];
+  /** @minimum 0 */
+  attempt_count: number;
+  attempt_errors: RadarAiAnalysisAttemptErrorsItem[];
   error_message: string;
   started_at: string;
   completed_at: string | null;
@@ -753,4 +762,3 @@ export const ExportRadarExecutiveReportPriority = {
   high: 'high',
   critical: 'critical',
 } as const;
-

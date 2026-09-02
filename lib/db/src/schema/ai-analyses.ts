@@ -21,7 +21,13 @@ export const radarAiAnalyses = pgTable(
     sourceEvidenceCount: integer("source_evidence_count").notNull().default(0),
     eventCount: integer("event_count").notNull().default(0),
     summary: text("summary").notNull().default(""),
+    evidenceIds: jsonb("evidence_ids").$type<string[]>().notNull().default([]),
     trends: jsonb("trends").$type<unknown[]>().notNull().default([]),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    attemptErrors: jsonb("attempt_errors")
+      .$type<{ attempt: number; error: string }[]>()
+      .notNull()
+      .default([]),
     errorMessage: text("error_message").notNull().default(""),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
