@@ -16,6 +16,7 @@ let jobsRecovered = 0;
 let ready = false;
 let workerLeader = 0;
 let activeJobs = 0;
+const readinessWaiters = new Set<() => void>();
 
 function increment(map: Map<string, number>, key: string) {
   map.set(key, (map.get(key) ?? 0) + 1);
@@ -73,8 +74,29 @@ export function recordWorkerJob(kind: string, status: WorkerStatus) {
 export function recordLeaseAcquisition() { leaseAcquisitions += 1; }
 export function recordLeaseLoss() { leaseLosses += 1; }
 export function recordRecoveredJobs(count: number) { jobsRecovered += Math.max(0, count); }
-export function setReadiness(value: boolean) { ready = value; }
+export function setReadiness(value: boolean) {
+  ready = value;
+  if (!value) return;
+  for (const resolve of readinessWaiters) resolve();
+  readinessWaiters.clear();
+}
 export function isReady() { return ready; }
+export function waitForReadiness(timeoutMs = 30_000) {
+  if (ready) return Promise.resolve(true);
+  return new Promise<boolean>((resolve) => {
+    let settled = false;
+    const finish = (value: boolean) => {
+      if (settled) return;
+      settled = true;
+      readinessWaiters.delete(onReady);
+      clearTimeout(timeout);
+      resolve(value);
+    };
+    const onReady = () => finish(true);
+    const timeout = setTimeout(() => finish(false), timeoutMs);
+    readinessWaiters.add(onReady);
+  });
+}
 export function setWorkerLeader(value: boolean) { workerLeader = value ? 1 : 0; }
 export function setActiveJobs(value: number) { activeJobs = Math.max(0, value); }
 

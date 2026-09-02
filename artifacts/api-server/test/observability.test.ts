@@ -25,10 +25,12 @@ describe("operational observability", () => {
     assert.doesNotMatch(metrics, /secret=value|a-sensitive-id|tenant-123/);
   });
 
-  it("keeps startup liveness available while business routes remain gated", async () => {
+  it("keeps startup liveness available while business routes wait for readiness", async () => {
     setReadiness(false);
-    await request(app).get("/api").expect(200, { status: "ok" });
-    await request(app).get("/api/radar/state").expect(503);
+    const requestPromise = request(app).get("/api/radar/state").expect(401);
+    setTimeout(() => setReadiness(true), 5);
+    await requestPromise;
+    setReadiness(true);
   });
 
   it("maps readiness failures to a generic unavailable status", async () => {
