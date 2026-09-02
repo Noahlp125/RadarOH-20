@@ -9,6 +9,18 @@ export interface HealthStatus {
   status: string;
 }
 
+export type OperationalStatusStatus = typeof OperationalStatusStatus[keyof typeof OperationalStatusStatus];
+
+
+export const OperationalStatusStatus = {
+  ok: 'ok',
+  unavailable: 'unavailable',
+} as const;
+
+export interface OperationalStatus {
+  status: OperationalStatusStatus;
+}
+
 export interface ErrorResponse {
   error: string;
 }

@@ -16,6 +16,8 @@ export * from './getRadarMonitorHistoryParams';
 export * from './getRadarPredictiveParams';
 export * from './healthStatus';
 export * from './notFoundResponse';
+export * from './operationalStatus';
+export * from './operationalStatusStatus';
 export * from './radarAiAlert';
 export * from './radarAiAlertImportance';
 export * from './radarAiAlertStatus';

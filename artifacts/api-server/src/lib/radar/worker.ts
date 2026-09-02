@@ -12,6 +12,15 @@ import {
 } from "@workspace/db";
 import { logger } from "../logger";
 import {
+  recordLeaseAcquisition,
+  recordLeaseLoss,
+  recordRecoveredJobs,
+  recordWorkerJob,
+  recordWorkerTick,
+  setActiveJobs,
+  setWorkerLeader,
+} from "../observability";
+import {
   enqueueRadarAiJob,
   executeRadarAiJob,
   RADAR_AI_INTERVAL_MS,
@@ -72,7 +81,14 @@ export async function stopRadarWorker() {
   if (activeTick) await activeTick;
   if (isLeader) await releaseWorkerLease();
   isLeader = false;
+  setWorkerLeader(false);
+  setActiveJobs(0);
   logger.info({ workerId }, "RadarOH durable worker stopped");
+}
+
+/** Deliberately excludes worker, job, workspace, and tenant identifiers. */
+export function getRadarWorkerStatus() {
+  return { running: Boolean(workerTimer || startTimer), leader: isLeader, active: Boolean(activeTick) };
 }
 
 function scheduleWorkerTick() {
@@ -88,8 +104,11 @@ async function runWorkerTick() {
     if (!lease.leader) {
       if (isLeader) {
         logger.warn({ workerId }, "RadarOH worker leadership lost");
+        recordLeaseLoss();
       }
       isLeader = false;
+      setWorkerLeader(false);
+      recordWorkerTick("success");
       return;
     }
     const recovered = await recoverInterruptedWork(workerId);
@@ -109,15 +128,26 @@ async function runWorkerTick() {
       );
     }
     isLeader = true;
+    setWorkerLeader(true);
+    if (lease.fresh) recordLeaseAcquisition();
+    recordRecoveredJobs(recovered.recoveredJobs);
     await enqueueDueRadarMonitorJobs();
     await enqueueRadarAiJob();
     for (let processed = 0; processed < MAX_JOBS_PER_TICK; processed += 1) {
-      if (stopping || !(await renewWorkerLease())) break;
+      if (stopping) break;
+      if (!(await renewWorkerLease())) {
+        recordLeaseLoss();
+        isLeader = false;
+        setWorkerLeader(false);
+        break;
+      }
       const claimed = await claimNextJob();
       if (!claimed) break;
       await executeClaimedJob(claimed);
     }
+    recordWorkerTick("success");
   } catch (error) {
+    recordWorkerTick("error");
     logger.error({ err: error, workerId }, "RadarOH durable worker tick failed");
   }
 }
@@ -316,6 +346,7 @@ export const radarWorkerTestHarness = {
   leaseId,
   leaseMs: WORKER_LEASE_MS,
   staleJobMs: STALE_JOB_MS,
+  status: getRadarWorkerStatus,
 };
 
 async function claimNextJob(): Promise<ClaimedJob | null> {
@@ -366,6 +397,7 @@ async function claimNextJob(): Promise<ClaimedJob | null> {
 }
 
 async function executeClaimedJob({ job, lockClient }: ClaimedJob) {
+  setActiveJobs(1);
   const heartbeat = setInterval(() => {
     void heartbeatJob(job.id).catch((error) =>
       logger.error(
@@ -390,6 +422,7 @@ async function executeClaimedJob({ job, lockClient }: ClaimedJob) {
       throw new Error(`Tipo de trabajo desconocido: ${job.kind}`);
     }
     await finishJob(job, "success");
+    recordWorkerJob(job.kind, "success");
   } catch (error) {
     logger.error(
       { err: error, jobId: job.id, jobKind: job.kind, workerId },
@@ -400,8 +433,10 @@ async function executeClaimedJob({ job, lockClient }: ClaimedJob) {
       "error",
       error instanceof Error ? error.message : "Error de ejecución.",
     );
+    recordWorkerJob(job.kind, "error");
   } finally {
     clearInterval(heartbeat);
+    setActiveJobs(0);
     await releaseJobLock(lockClient, job.jobKey);
   }
 }

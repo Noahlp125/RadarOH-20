@@ -4,6 +4,7 @@ import { logger } from "./lib/logger";
 import { initializeRadarDatabaseSecurity } from "./lib/radar/database-security";
 import { startRadarWorker, stopRadarWorker } from "./lib/radar/worker";
 import { createShutdownHandler } from "./lib/shutdown";
+import { setReadiness } from "./lib/observability";
 
 const rawPort = process.env["PORT"];
 
@@ -20,6 +21,7 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 await initializeRadarDatabaseSecurity();
+setReadiness(true);
 
 const server = app.listen(port, (err) => {
   if (err) {

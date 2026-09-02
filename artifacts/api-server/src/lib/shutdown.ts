@@ -1,4 +1,5 @@
 export const DEFAULT_SHUTDOWN_TIMEOUT_MS = 10_000;
+import { setReadiness } from "./observability";
 
 type ShutdownLogger = {
   info(bindings: Record<string, unknown>, message: string): void;
@@ -27,6 +28,7 @@ export function createShutdownHandler({
   return async function shutdown(signal: string) {
     if (shuttingDown) return;
     shuttingDown = true;
+    setReadiness(false);
     logger.info({ signal }, "Graceful shutdown started");
 
     const forceExit = setTimeout(() => {
@@ -35,9 +37,25 @@ export function createShutdownHandler({
     }, timeoutMs);
     forceExit.unref();
 
-    const [serverError] = await Promise.all([closeServer(), stopWorker()]);
-    await closePool();
-    clearTimeout(forceExit);
-    exit(serverError ? 1 : 0);
+    let failed = false;
+    try {
+      const results = await Promise.allSettled([closeServer(), stopWorker()]);
+      for (const result of results) {
+        if (result.status === "rejected" || result.value instanceof Error) {
+          failed = true;
+          logger.error({ err: result.status === "rejected" ? result.reason : result.value }, "Graceful shutdown component failed");
+        }
+      }
+    } finally {
+      try {
+        await closePool();
+      } catch (error) {
+        failed = true;
+        logger.error({ err: error }, "Database pool close failed");
+      } finally {
+        clearTimeout(forceExit);
+      }
+    }
+    exit(failed ? 1 : 0);
   };
 }

@@ -9,12 +9,28 @@ import * as zod from 'zod';
 
 
 /**
- * Returns server health status
+ * Process liveness check without dependency probing
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
   "status": zod.string()
 })
+
+
+/**
+ * Reports whether the API can reach PostgreSQL without exposing dependency details
+ * @summary Readiness check
+ */
+export const ReadinessCheckResponse = zod.object({
+  "status": zod.enum(['ok', 'unavailable'])
+})
+
+
+/**
+ * Prometheus text exposition without tenant or business labels
+ * @summary Read bounded operational metrics
+ */
+export const GetOperationalMetricsResponse = zod.string()
 
 
 /**

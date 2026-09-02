@@ -5,3 +5,4 @@
 - [RadarOH predictive claims](radaroh-predictive-claims.md) — scores and leading signals stay deterministic and evidence-backed until labeled outcomes support calibrated prediction.
 - [RadarOH worker coordination](radaroh-worker-coordination.md) — recurring jobs require a DB lease plus per-job advisory fencing and recovery on every leader tick.
 - [Drizzle RLS policy reconciliation](drizzle-rls-policy-reconciliation.md) — schema push may not repair policy expressions; normalize and verify RLS at startup.
+- [RadarOH operational boundaries](radaroh-operational-boundaries.md) — API replicas may autoscale, but the durable worker remains single-active; managed backup/DR requires operator verification.

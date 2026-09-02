@@ -45,4 +45,31 @@ describe("API shutdown", () => {
     assert.equal(await exitCode, 1);
     assert.ok(Date.now() - startedAt < 500);
   });
+
+  it("always closes the database pool when another shutdown phase fails", async () => {
+    let poolClosed = false;
+    let exitCode: number | undefined;
+    const shutdown = createShutdownHandler({
+      closeServer: async () => new Error("server close failed"),
+      stopWorker: async () => {
+        throw new Error("worker stop failed");
+      },
+      closePool: async () => {
+        poolClosed = true;
+      },
+      exit: (code) => {
+        exitCode = code;
+      },
+      logger: {
+        info: () => undefined,
+        error: () => undefined,
+      },
+      timeoutMs: 250,
+    });
+
+    await shutdown("SIGTERM");
+
+    assert.equal(poolClosed, true);
+    assert.equal(exitCode, 1);
+  });
 });

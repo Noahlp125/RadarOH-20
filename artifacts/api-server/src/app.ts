@@ -1,12 +1,15 @@
 import express, { type ErrorRequestHandler, type Express } from "express";
+import { randomUUID } from "node:crypto";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import pinoHttp from "pino-http";
 import router from "./routes";
+import healthRouter from "./routes/health";
 import { logger } from "./lib/logger";
 import { recordRadarActivity } from "./lib/radar/dashboard";
+import { recordHttpRequest } from "./lib/observability";
 import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,
@@ -16,9 +19,33 @@ import {
 const app: Express = express();
 app.set("trust proxy", 1);
 
+const REQUEST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+
+export function requestIdFromHeader(value: string | undefined) {
+  return value && REQUEST_ID_PATTERN.test(value) ? value : randomUUID();
+}
+
+app.use((req, res, next) => {
+  const requestId = requestIdFromHeader(req.get("x-request-id"));
+  (req as typeof req & { id: string }).id = requestId;
+  res.setHeader("X-Request-ID", requestId);
+  const startedAt = process.hrtime.bigint();
+  res.locals.requestStartedAt = startedAt;
+  res.on("finish", () => {
+    recordHttpRequest(
+      req.method,
+      req.originalUrl,
+      res.statusCode,
+      Number(process.hrtime.bigint() - startedAt) / 1_000_000,
+    );
+  });
+  next();
+});
+
 app.use(
   pinoHttp({
     logger,
+    genReqId: (req) => (req as typeof req & { id?: string }).id ?? randomUUID(),
     serializers: {
       req(req) {
         return {
@@ -37,6 +64,8 @@ app.use(
 );
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(helmet());
+// Operational endpoints must remain available without Clerk/Radar authorization.
+app.use("/api", healthRouter);
 app.use(
   "/api",
   rateLimit({
@@ -71,12 +100,13 @@ app.use("/api/radar", (req, res, next) => {
   const shouldAudit = ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
   if (shouldAudit) {
     res.on("finish", () => {
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        void recordRadarActivity(req.method.toLocaleLowerCase(), "api", req.path, {
-          status: res.statusCode,
-          actor_user_id: res.locals.radarUserId,
-        }).catch((error) => logger.error({ err: error }, "RadarOH audit write failed"));
-      }
+      void recordRadarActivity(req.method.toLocaleLowerCase(), "api", req.path, {
+        status: res.statusCode,
+        outcome: res.statusCode >= 200 && res.statusCode < 300 ? "success" : "rejected",
+        actor_user_id: res.locals.radarUserId,
+        request_id: (req as typeof req & { id?: string }).id,
+        duration_ms: Math.round(Number(process.hrtime.bigint() - res.locals.requestStartedAt) / 1_000_000),
+      }).catch((error) => logger.error({ err: error }, "RadarOH audit write failed"));
     });
   }
   next();
@@ -84,13 +114,19 @@ app.use("/api/radar", (req, res, next) => {
 
 app.use("/api", router);
 app.use("/api", (_req, res) => {
-  res.status(404).json({ error: "Ruta no encontrada" });
+  res.status(404).json({
+    error: "Ruta no encontrada",
+    request_id: (_req as typeof _req & { id?: string }).id,
+  });
 });
 
 const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
   req.log.error({ err: error }, "Unhandled API error");
   if (res.headersSent) return;
-  res.status(500).json({ error: "Error interno del servidor" });
+  res.status(500).json({
+    error: "Error interno del servidor",
+    request_id: (req as typeof req & { id?: string }).id,
+  });
 };
 app.use(errorHandler);
 

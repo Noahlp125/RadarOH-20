@@ -26,7 +26,7 @@ paths:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
+      description: Process liveness check without dependency probing
       responses:
         "200":
           description: Healthy
@@ -34,6 +34,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /readyz:
+    get:
+      operationId: readinessCheck
+      tags: [health]
+      summary: Readiness check
+      description: Reports whether the API can reach PostgreSQL without exposing dependency details
+      responses:
+        "200":
+          description: Ready to serve traffic
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationalStatus"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationalStatus"
+  /metrics:
+    get:
+      operationId: getOperationalMetrics
+      tags: [health]
+      summary: Read bounded operational metrics
+      description: Prometheus text exposition without tenant or business labels
+      responses:
+        "200":
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
   /radar/state:
     get:
       operationId: getRadarState
@@ -679,6 +711,14 @@ components:
       properties:
         status:
           type: string
+      required:
+        - status
+    OperationalStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
       required:
         - status
     ErrorResponse:

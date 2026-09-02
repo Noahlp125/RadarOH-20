@@ -61,6 +61,7 @@ No preferences recorded.
 
 - Direct Vite builds require the workflow-provided `PORT` and `BASE_PATH`; use the managed RadarOH workflow for preview verification.
 - Monitoring and AI recurring work must use the PostgreSQL-backed durable worker; do not add independent in-process schedulers or a second worker command.
+- Operational endpoints are `/api/healthz`, `/api/readyz`, and `/api/metrics`; Phase 10 operating guidance is in `artifacts/radar-oh/docs/radar-oh-fase-10.md`.
 - Do not remove the preserved JSON or legacy source snapshots.
 
 ## Pointers
