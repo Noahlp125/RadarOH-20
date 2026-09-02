@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { pool } from "@workspace/db";
-import { initializeRadarDatabaseSecurity } from "../lib/radar/database-security";
+import { getRadarDatabaseRole, initializeRadarDatabaseSecurity } from "../lib/radar/database-security";
 
 afterAll(async () => {
   await pool.end();
@@ -29,7 +29,7 @@ describe("RadarOH database isolation", () => {
       await client.query("select set_config('app.workspace_id', $1, true)", [
         "00000000-0000-4000-8000-000000000000",
       ]);
-      await client.query("set local role radar_app");
+      await client.query(`set local role "${getRadarDatabaseRole()}"`);
       const result = await client.query("select count(*)::int as count from radar_sources");
       expect(result.rows[0].count).toBe(0);
       await client.query("rollback");

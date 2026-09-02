@@ -6,6 +6,7 @@ export * from "./ai-findings";
 export * from "./change-events";
 export * from "./competitors";
 export * from "./imports";
+export * from "./integrations";
 export * from "./keywords";
 export * from "./monitor-evidence";
 export * from "./monitor-runs";

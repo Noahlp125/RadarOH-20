@@ -842,6 +842,176 @@ export interface RadarIntelligence {
   report: RadarIntelligenceReport;
 }
 
+export type RadarIntegrationStatus = typeof RadarIntegrationStatus[keyof typeof RadarIntegrationStatus];
+
+
+export const RadarIntegrationStatus = {
+  pending_authorization: 'pending_authorization',
+  ready: 'ready',
+  paused: 'paused',
+  error: 'error',
+} as const;
+
+export interface RadarIntegration {
+  id: string;
+  name: string;
+  provider: string;
+  category: string;
+  status: RadarIntegrationStatus;
+  documentation_url: string;
+  authorized: boolean;
+  scopes: string[];
+  last_checked_at: string | null;
+  last_error: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RadarIntegrationRegistration {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  name: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  provider: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  category: string;
+  /**
+     * @minLength 1
+     * @maxLength 2048
+     */
+  documentation_url: string;
+  /** @maxItems 50 */
+  scopes?: string[];
+}
+
+export type RadarIntegrationUpdateStatus = typeof RadarIntegrationUpdateStatus[keyof typeof RadarIntegrationUpdateStatus];
+
+
+export const RadarIntegrationUpdateStatus = {
+  pending_authorization: 'pending_authorization',
+  ready: 'ready',
+  paused: 'paused',
+  error: 'error',
+} as const;
+
+export interface RadarIntegrationUpdate {
+  /** @maxLength 2048 */
+  documentation_url?: string;
+  authorized?: boolean;
+  status?: RadarIntegrationUpdateStatus;
+  /** @maxItems 50 */
+  scopes?: string[];
+  /** @maxLength 1000 */
+  last_error?: string;
+}
+
+export type RadarWebhookSubscriptionStatus = typeof RadarWebhookSubscriptionStatus[keyof typeof RadarWebhookSubscriptionStatus];
+
+
+export const RadarWebhookSubscriptionStatus = {
+  paused: 'paused',
+  active: 'active',
+  error: 'error',
+} as const;
+
+export interface RadarWebhookSubscription {
+  id: string;
+  integration_id: string;
+  name: string;
+  endpoint_url: string;
+  event_types: string[];
+  status: RadarWebhookSubscriptionStatus;
+  authorized: boolean;
+  max_attempts: number;
+  consecutive_failures: number;
+  last_delivery_at: string | null;
+  last_error: string;
+}
+
+export interface RadarWebhookRegistration {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  name: string;
+  /**
+     * @minLength 1
+     * @maxLength 2048
+     */
+  endpoint_url: string;
+  /**
+     * @minItems 1
+     * @maxItems 50
+     */
+  event_types: string[];
+  authorized?: boolean;
+}
+
+export type RadarIntegrationDeliveryStatus = typeof RadarIntegrationDeliveryStatus[keyof typeof RadarIntegrationDeliveryStatus];
+
+
+export const RadarIntegrationDeliveryStatus = {
+  pending: 'pending',
+  succeeded: 'succeeded',
+  failed: 'failed',
+} as const;
+
+export interface RadarIntegrationDelivery {
+  id: string;
+  webhook_id: string;
+  event_type: string;
+  status: RadarIntegrationDeliveryStatus;
+  attempts: number;
+  next_attempt_at: string | null;
+  last_error: string;
+  delivered_at: string | null;
+  created_at: string;
+}
+
+export type RadarIntegrationsOverviewSafety = {
+  external_connections_enabled: boolean;
+  authorization_required: boolean;
+  documentation_required: boolean;
+};
+
+export type RadarIntegrationsOverviewDeliveries = {
+  total: number;
+  pending: number;
+  failed: number;
+  succeeded: number;
+};
+
+export type RadarIntegrationsOverviewDepartmentsItem = {
+  id: string;
+  name: string;
+  description: string;
+  focus: string[];
+};
+
+export type RadarIntegrationsOverviewApi = {
+  private_base_path: string;
+  public_status: string;
+  supported_events: string[];
+};
+
+export interface RadarIntegrationsOverview {
+  generated_at: string;
+  safety: RadarIntegrationsOverviewSafety;
+  integrations: RadarIntegration[];
+  webhooks: RadarWebhookSubscription[];
+  deliveries: RadarIntegrationsOverviewDeliveries;
+  departments: RadarIntegrationsOverviewDepartmentsItem[];
+  api: RadarIntegrationsOverviewApi;
+}
+
 /**
  * Request validation failed
  */

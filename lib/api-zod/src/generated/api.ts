@@ -1195,6 +1195,224 @@ export const GetRadarIntelligenceResponse = zod.object({
 
 
 /**
+ * @summary Read the integration control plane and department dashboard catalog
+ */
+export const GetRadarIntegrationsOverviewResponse = zod.object({
+  "generated_at": zod.string(),
+  "safety": zod.object({
+  "external_connections_enabled": zod.boolean(),
+  "authorization_required": zod.boolean(),
+  "documentation_required": zod.boolean()
+}),
+  "integrations": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "provider": zod.string(),
+  "category": zod.string(),
+  "status": zod.enum(['pending_authorization', 'ready', 'paused', 'error']),
+  "documentation_url": zod.string(),
+  "authorized": zod.boolean(),
+  "scopes": zod.array(zod.string()),
+  "last_checked_at": zod.string().nullable(),
+  "last_error": zod.string(),
+  "created_at": zod.string(),
+  "updated_at": zod.string()
+})),
+  "webhooks": zod.array(zod.object({
+  "id": zod.string(),
+  "integration_id": zod.string(),
+  "name": zod.string(),
+  "endpoint_url": zod.string(),
+  "event_types": zod.array(zod.string()),
+  "status": zod.enum(['paused', 'active', 'error']),
+  "authorized": zod.boolean(),
+  "max_attempts": zod.number(),
+  "consecutive_failures": zod.number(),
+  "last_delivery_at": zod.string().nullable(),
+  "last_error": zod.string()
+})),
+  "deliveries": zod.object({
+  "total": zod.number(),
+  "pending": zod.number(),
+  "failed": zod.number(),
+  "succeeded": zod.number()
+}),
+  "departments": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "focus": zod.array(zod.string())
+})),
+  "api": zod.object({
+  "private_base_path": zod.string(),
+  "public_status": zod.string(),
+  "supported_events": zod.array(zod.string())
+})
+})
+
+
+/**
+ * @summary Register an external system for documented authorization review
+ */
+export const registerRadarIntegrationBodyNameMax = 160;
+
+export const registerRadarIntegrationBodyProviderMax = 120;
+
+export const registerRadarIntegrationBodyCategoryMax = 80;
+
+export const registerRadarIntegrationBodyDocumentationUrlMax = 2048;
+
+export const registerRadarIntegrationBodyScopesMax = 50;
+
+
+
+export const RegisterRadarIntegrationBody = zod.object({
+  "name": zod.string().min(1).max(registerRadarIntegrationBodyNameMax),
+  "provider": zod.string().min(1).max(registerRadarIntegrationBodyProviderMax),
+  "category": zod.string().min(1).max(registerRadarIntegrationBodyCategoryMax),
+  "documentation_url": zod.string().min(1).max(registerRadarIntegrationBodyDocumentationUrlMax),
+  "scopes": zod.array(zod.string()).max(registerRadarIntegrationBodyScopesMax).optional()
+})
+
+export const RegisterRadarIntegrationResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "provider": zod.string(),
+  "category": zod.string(),
+  "status": zod.enum(['pending_authorization', 'ready', 'paused', 'error']),
+  "documentation_url": zod.string(),
+  "authorized": zod.boolean(),
+  "scopes": zod.array(zod.string()),
+  "last_checked_at": zod.string().nullable(),
+  "last_error": zod.string(),
+  "created_at": zod.string(),
+  "updated_at": zod.string()
+})
+
+
+/**
+ * @summary Update authorization metadata or pause an integration
+ */
+
+
+
+export const UpdateRadarIntegrationParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const updateRadarIntegrationBodyDocumentationUrlMax = 2048;
+
+export const updateRadarIntegrationBodyScopesMax = 50;
+
+export const updateRadarIntegrationBodyLastErrorMax = 1000;
+
+
+
+export const UpdateRadarIntegrationBody = zod.object({
+  "documentation_url": zod.string().max(updateRadarIntegrationBodyDocumentationUrlMax).optional(),
+  "authorized": zod.boolean().optional(),
+  "status": zod.enum(['pending_authorization', 'ready', 'paused', 'error']).optional(),
+  "scopes": zod.array(zod.string()).max(updateRadarIntegrationBodyScopesMax).optional(),
+  "last_error": zod.string().max(updateRadarIntegrationBodyLastErrorMax).optional()
+})
+
+export const UpdateRadarIntegrationResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "provider": zod.string(),
+  "category": zod.string(),
+  "status": zod.enum(['pending_authorization', 'ready', 'paused', 'error']),
+  "documentation_url": zod.string(),
+  "authorized": zod.boolean(),
+  "scopes": zod.array(zod.string()),
+  "last_checked_at": zod.string().nullable(),
+  "last_error": zod.string(),
+  "created_at": zod.string(),
+  "updated_at": zod.string()
+})
+
+
+/**
+ * @summary Register a paused webhook subscription
+ */
+
+
+
+export const CreateRadarWebhookSubscriptionParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const createRadarWebhookSubscriptionBodyNameMax = 160;
+
+export const createRadarWebhookSubscriptionBodyEndpointUrlMax = 2048;
+
+export const createRadarWebhookSubscriptionBodyEventTypesMax = 50;
+
+export const createRadarWebhookSubscriptionBodyAuthorizedDefault = false;
+
+export const CreateRadarWebhookSubscriptionBody = zod.object({
+  "name": zod.string().min(1).max(createRadarWebhookSubscriptionBodyNameMax),
+  "endpoint_url": zod.string().min(1).max(createRadarWebhookSubscriptionBodyEndpointUrlMax),
+  "event_types": zod.array(zod.string()).min(1).max(createRadarWebhookSubscriptionBodyEventTypesMax),
+  "authorized": zod.boolean().default(createRadarWebhookSubscriptionBodyAuthorizedDefault)
+})
+
+export const CreateRadarWebhookSubscriptionResponse = zod.object({
+  "id": zod.string(),
+  "integration_id": zod.string(),
+  "name": zod.string(),
+  "endpoint_url": zod.string(),
+  "event_types": zod.array(zod.string()),
+  "status": zod.enum(['paused', 'active', 'error']),
+  "authorized": zod.boolean(),
+  "max_attempts": zod.number(),
+  "consecutive_failures": zod.number(),
+  "last_delivery_at": zod.string().nullable(),
+  "last_error": zod.string()
+})
+
+
+/**
+ * @summary Read webhook delivery attempts and recovery state
+ */
+export const ListRadarIntegrationDeliveriesResponseItem = zod.object({
+  "id": zod.string(),
+  "webhook_id": zod.string(),
+  "event_type": zod.string(),
+  "status": zod.enum(['pending', 'succeeded', 'failed']),
+  "attempts": zod.number(),
+  "next_attempt_at": zod.string().nullable(),
+  "last_error": zod.string(),
+  "delivered_at": zod.string().nullable(),
+  "created_at": zod.string()
+})
+export const ListRadarIntegrationDeliveriesResponse = zod.array(ListRadarIntegrationDeliveriesResponseItem)
+
+
+/**
+ * @summary Queue a failed delivery for a later authorized retry
+ */
+
+
+
+export const RetryRadarIntegrationDeliveryParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const RetryRadarIntegrationDeliveryResponse = zod.object({
+  "id": zod.string(),
+  "webhook_id": zod.string(),
+  "event_type": zod.string(),
+  "status": zod.enum(['pending', 'succeeded', 'failed']),
+  "attempts": zod.number(),
+  "next_attempt_at": zod.string().nullable(),
+  "last_error": zod.string(),
+  "delivered_at": zod.string().nullable(),
+  "created_at": zod.string()
+})
+
+
+/**
  * @summary Search across RadarOH entities and evidence
  */
 export const searchRadarQueryQMin = 2;

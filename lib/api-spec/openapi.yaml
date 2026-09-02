@@ -16,6 +16,8 @@ tags:
     description: Evidence-grounded RadarOH AI analysis and alerts
   - name: radar-analytics
     description: Executive intelligence dashboards, search and exports
+  - name: radar-integrations
+    description: Authorized integration registry, webhooks and delivery observability
 paths:
   /healthz:
     get:
@@ -456,6 +458,100 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/RadarIntelligence" }
         "400": { $ref: "#/components/responses/ValidationError" }
+  /radar/integrations/overview:
+    get:
+      operationId: getRadarIntegrationsOverview
+      tags: [radar-integrations]
+      summary: Read the integration control plane and department dashboard catalog
+      responses:
+        "200":
+          description: Integration registry, webhook health, delivery metrics and departments
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RadarIntegrationsOverview" }
+  /radar/integrations:
+    post:
+      operationId: registerRadarIntegration
+      tags: [radar-integrations]
+      summary: Register an external system for documented authorization review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RadarIntegrationRegistration" }
+      responses:
+        "201":
+          description: Registered integration, always pending authorization initially
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RadarIntegration" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+  /radar/integrations/{id}:
+    patch:
+      operationId: updateRadarIntegration
+      tags: [radar-integrations]
+      summary: Update authorization metadata or pause an integration
+      parameters:
+        - $ref: "#/components/parameters/RadarId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RadarIntegrationUpdate" }
+      responses:
+        "200":
+          description: Updated integration
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RadarIntegration" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /radar/integrations/{id}/webhooks:
+    post:
+      operationId: createRadarWebhookSubscription
+      tags: [radar-integrations]
+      summary: Register a paused webhook subscription
+      parameters:
+        - $ref: "#/components/parameters/RadarId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RadarWebhookRegistration" }
+      responses:
+        "201":
+          description: Paused webhook subscription
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RadarWebhookSubscription" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+  /radar/integrations/deliveries:
+    get:
+      operationId: listRadarIntegrationDeliveries
+      tags: [radar-integrations]
+      summary: Read webhook delivery attempts and recovery state
+      responses:
+        "200":
+          description: Recent deliveries
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RadarIntegrationDelivery" }
+  /radar/integrations/deliveries/{id}/retry:
+    post:
+      operationId: retryRadarIntegrationDelivery
+      tags: [radar-integrations]
+      summary: Queue a failed delivery for a later authorized retry
+      parameters:
+        - $ref: "#/components/parameters/RadarId"
+      responses:
+        "200":
+          description: Delivery queued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RadarIntegrationDelivery" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /radar/search:
     get:
       operationId: searchRadar
@@ -1275,3 +1371,115 @@ components:
             total: { type: number }
             unread: { type: number }
             read_rate: { type: number }
+    RadarIntegration:
+      type: object
+      required: [id, name, provider, category, status, documentation_url, authorized, scopes, last_checked_at, last_error, created_at, updated_at]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        provider: { type: string }
+        category: { type: string }
+        status: { type: string, enum: [pending_authorization, ready, paused, error] }
+        documentation_url: { type: string }
+        authorized: { type: boolean }
+        scopes: { type: array, items: { type: string } }
+        last_checked_at: { type: string, nullable: true }
+        last_error: { type: string }
+        created_at: { type: string }
+        updated_at: { type: string }
+    RadarIntegrationRegistration:
+      type: object
+      required: [name, provider, category, documentation_url]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        provider: { type: string, minLength: 1, maxLength: 120 }
+        category: { type: string, minLength: 1, maxLength: 80 }
+        documentation_url: { type: string, minLength: 1, maxLength: 2048 }
+        scopes: { type: array, items: { type: string }, maxItems: 50 }
+    RadarIntegrationUpdate:
+      type: object
+      properties:
+        documentation_url: { type: string, maxLength: 2048 }
+        authorized: { type: boolean }
+        status: { type: string, enum: [pending_authorization, ready, paused, error] }
+        scopes: { type: array, items: { type: string }, maxItems: 50 }
+        last_error: { type: string, maxLength: 1000 }
+    RadarWebhookSubscription:
+      type: object
+      required: [id, integration_id, name, endpoint_url, event_types, status, authorized, max_attempts, consecutive_failures, last_delivery_at, last_error]
+      properties:
+        id: { type: string }
+        integration_id: { type: string }
+        name: { type: string }
+        endpoint_url: { type: string }
+        event_types: { type: array, items: { type: string } }
+        status: { type: string, enum: [paused, active, error] }
+        authorized: { type: boolean }
+        max_attempts: { type: number }
+        consecutive_failures: { type: number }
+        last_delivery_at: { type: string, nullable: true }
+        last_error: { type: string }
+    RadarWebhookRegistration:
+      type: object
+      required: [name, endpoint_url, event_types]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        endpoint_url: { type: string, minLength: 1, maxLength: 2048 }
+        event_types: { type: array, items: { type: string }, minItems: 1, maxItems: 50 }
+        authorized: { type: boolean, default: false }
+    RadarIntegrationDelivery:
+      type: object
+      required: [id, webhook_id, event_type, status, attempts, next_attempt_at, last_error, delivered_at, created_at]
+      properties:
+        id: { type: string }
+        webhook_id: { type: string }
+        event_type: { type: string }
+        status: { type: string, enum: [pending, succeeded, failed] }
+        attempts: { type: number }
+        next_attempt_at: { type: string, nullable: true }
+        last_error: { type: string }
+        delivered_at: { type: string, nullable: true }
+        created_at: { type: string }
+    RadarIntegrationsOverview:
+      type: object
+      required: [generated_at, safety, integrations, webhooks, deliveries, departments, api]
+      properties:
+        generated_at: { type: string }
+        safety:
+          type: object
+          required: [external_connections_enabled, authorization_required, documentation_required]
+          properties:
+            external_connections_enabled: { type: boolean }
+            authorization_required: { type: boolean }
+            documentation_required: { type: boolean }
+        integrations:
+          type: array
+          items: { $ref: "#/components/schemas/RadarIntegration" }
+        webhooks:
+          type: array
+          items: { $ref: "#/components/schemas/RadarWebhookSubscription" }
+        deliveries:
+          type: object
+          required: [total, pending, failed, succeeded]
+          properties:
+            total: { type: number }
+            pending: { type: number }
+            failed: { type: number }
+            succeeded: { type: number }
+        departments:
+          type: array
+          items:
+            type: object
+            required: [id, name, description, focus]
+            properties:
+              id: { type: string }
+              name: { type: string }
+              description: { type: string }
+              focus: { type: array, items: { type: string } }
+        api:
+          type: object
+          required: [private_base_path, public_status, supported_events]
+          properties:
+            private_base_path: { type: string }
+            public_status: { type: string }
+            supported_events: { type: array, items: { type: string } }

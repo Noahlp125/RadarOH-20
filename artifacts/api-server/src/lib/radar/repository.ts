@@ -23,6 +23,7 @@ import {
   type RadarImportPayload,
   type RadarStateInput,
 } from "./validation";
+import { getRadarDatabaseRole } from "./database-security";
 
 const configuredWorkspaceId = process.env.RADAR_WORKSPACE_ID;
 
@@ -128,7 +129,11 @@ export async function withRadarTransaction<T>(
       .insert(radarWorkspaces)
       .values({ id: RADAR_WORKSPACE_ID, name: "OH Casas" })
       .onConflictDoNothing();
-    await tx.execute(sql`set local role radar_app`);
+    const role = getRadarDatabaseRole();
+    if (!/^radar_app_[a-f0-9]{12}$/.test(role)) {
+      throw new Error("RadarOH database role is not initialized");
+    }
+    await tx.execute(sql.raw(`set local role "${role}"`));
     return callback(tx);
   });
 }

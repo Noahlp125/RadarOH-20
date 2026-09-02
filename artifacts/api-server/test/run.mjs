@@ -16,6 +16,6 @@ await build({
 
 const result = spawnSync(process.execPath, ["--test", output], {
   stdio: "inherit",
-  env: { ...process.env, RADAR_WORKSPACE_ID: process.env.RADAR_WORKSPACE_ID ?? "test-workspace" },
+  env: { ...process.env, RADAR_WORKSPACE_ID: process.env.RADAR_WORKSPACE_ID ?? "test-workspace", DATABASE_URL: process.env.DATABASE_URL ?? "postgres://test:test@127.0.0.1:5432/test" },
 });
 process.exit(result.status ?? 1);

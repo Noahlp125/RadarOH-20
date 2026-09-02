@@ -57,6 +57,7 @@ const EjecutivoTab = lazy(() => import("../components/EjecutivoTab"));
 const ComparativaTab = lazy(() => import("../components/ComparativaTab"));
 const InformesTab = lazy(() => import("../components/InformesTab"));
 const InteligenciaAvanzadaTab = lazy(() => import("../components/InteligenciaAvanzadaTab"));
+const CentroIntegracionesTab = lazy(() => import("../components/CentroIntegracionesTab"));
 
 const KEYS = {
   sources: "radar-oh:sources",
@@ -452,11 +453,12 @@ export default function RadarOH() {
               <button className="rdo-button secondary" onClick={() => importInputRef.current?.click()} data-testid="button-import-data"><Upload size={14} /> Importar datos</button>
               <input ref={importInputRef} className="rdo-hidden" type="file" accept="application/json" onChange={importData} data-testid="input-import-data" />
             </div>
-            <Suspense fallback={<div className="rdo-monitor-loading"><div className="rdo-loading-mark" /> Cargando inteligencia ejecutiva...</div>}>
+            <Suspense fallback={<div className="rdo-monitor-loading"><div className="rdo-loading-mark" /> Cargando...</div>}>
               {tab === "ejecutivo" && <EjecutivoTab competitors={competitors} sources={sources} />}
               {tab === "comparativa" && <ComparativaTab competitors={competitors} />}
               {tab === "informes" && <InformesTab competitors={competitors} sources={sources} />}
               {tab === "inteligencia" && <InteligenciaAvanzadaTab />}
+              {tab === "integraciones" && <CentroIntegracionesTab />}
             </Suspense>
             {tab === "resumen" && (
               <ResumenTab
@@ -501,7 +503,7 @@ export default function RadarOH() {
 }
 
 function tabTitle(tab) {
-  return { ejecutivo: "Dashboard Ejecutivo", comparativa: "Comparativa Competitiva", informes: "Informes", fuentes: "Fuentes de señal", competidores: "Mapa competitivo", keywords: "Keywords estratégicas", plan: "Plan de situación", monitorizacion: "Monitorización automática", historial: "Historial competitivo", insights: "Insights IA", alertas: "Alertas de mercado", historial_ia: "Historial IA", resumen: "Centro de control", inteligencia: "Inteligencia Avanzada" }[tab] || "RadarOH";
+  return { ejecutivo: "Dashboard Ejecutivo", comparativa: "Comparativa Competitiva", informes: "Informes", fuentes: "Fuentes de señal", competidores: "Mapa competitivo", keywords: "Keywords estratégicas", plan: "Plan de situación", monitorizacion: "Monitorización automática", historial: "Historial competitivo", insights: "Insights IA", alertas: "Alertas de mercado", historial_ia: "Historial IA", resumen: "Centro de control", inteligencia: "Inteligencia Avanzada", integraciones: "Centro de Integraciones" }[tab] || "RadarOH";
 }
 
 function Sidebar({ tab, onSelect, open, today }) {
@@ -516,6 +518,7 @@ function Sidebar({ tab, onSelect, open, today }) {
     { id: "monitorizacion", label: "Monitorización", icon: Activity, group: "Inteligencia continua" },
     { id: "historial", label: "Historial", icon: History, group: "Inteligencia continua" },
     { id: "informes", label: "Informes", icon: Download, group: "Inteligencia continua" },
+    { id: "integraciones", label: "Integraciones", icon: Zap, group: "Inteligencia continua" },
     { id: "inteligencia", label: "Intel Avanzada", icon: Sparkles, group: "Inteligencia artificial" },
     { id: "insights", label: "Insights IA", icon: Sparkles, group: "Inteligencia artificial" },
     { id: "alertas", label: "Alertas", icon: BellRing, group: "Inteligencia artificial" },

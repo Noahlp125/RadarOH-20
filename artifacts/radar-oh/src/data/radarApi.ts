@@ -17,6 +17,12 @@ import {
   exportRadarExecutiveReport,
   getRadarAlertPreferences,
   updateRadarAlertPreferences,
+  getRadarIntegrationsOverview,
+  registerRadarIntegration,
+  updateRadarIntegration,
+  createRadarWebhookSubscription,
+  listRadarIntegrationDeliveries,
+  retryRadarIntegrationDelivery,
   type RadarState,
   type RadarAiStatus,
   type RadarAiAnalysisRequest,
@@ -31,6 +37,13 @@ import {
   type RadarAlertPreferencesUpdate,
   type GetRadarIntelligenceParams,
   type RadarIntelligence,
+  type RadarIntegrationsOverview,
+  type RadarIntegrationRegistration,
+  type RadarIntegrationUpdate,
+  type RadarWebhookRegistration,
+  type RadarIntegrationDelivery,
+  type RadarIntegration,
+  type RadarWebhookSubscription
 } from "@workspace/api-client-react";
 
 export type RadarLocalState = Omit<RadarState, "workspaceId">;
@@ -129,4 +142,28 @@ export async function saveRadarAlertPreferences(data: RadarAlertPreferencesUpdat
 export async function fetchRadarIntelligence(params?: GetRadarIntelligenceParams): Promise<RadarIntelligence> {
   const { getRadarIntelligence } = await import("@workspace/api-client-react");
   return getRadarIntelligence(params);
+}
+
+export async function fetchRadarIntegrationsOverview(): Promise<RadarIntegrationsOverview> {
+  return getRadarIntegrationsOverview();
+}
+
+export async function addRadarIntegration(data: RadarIntegrationRegistration): Promise<RadarIntegration> {
+  return registerRadarIntegration(data);
+}
+
+export async function modifyRadarIntegration(id: string, data: RadarIntegrationUpdate): Promise<RadarIntegration> {
+  return updateRadarIntegration(id, data);
+}
+
+export async function addRadarWebhookSubscription(integrationId: string, data: RadarWebhookRegistration): Promise<RadarWebhookSubscription> {
+  return createRadarWebhookSubscription(integrationId, data);
+}
+
+export async function fetchRadarIntegrationDeliveries(): Promise<RadarIntegrationDelivery[]> {
+  return listRadarIntegrationDeliveries();
+}
+
+export async function retryDelivery(id: string): Promise<RadarIntegrationDelivery> {
+  return retryRadarIntegrationDelivery(id);
 }

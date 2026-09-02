@@ -41,6 +41,11 @@ import type {
   RadarExecutiveDashboard,
   RadarImportRequest,
   RadarImportResult,
+  RadarIntegration,
+  RadarIntegrationDelivery,
+  RadarIntegrationRegistration,
+  RadarIntegrationUpdate,
+  RadarIntegrationsOverview,
   RadarIntelligence,
   RadarKeyword,
   RadarKeywordInput,
@@ -54,6 +59,8 @@ import type {
   RadarSourceUpdate,
   RadarState,
   RadarStateInput,
+  RadarWebhookRegistration,
+  RadarWebhookSubscription,
   SearchRadarParams,
   ServerErrorResponse,
   ValidationErrorResponse
@@ -1798,6 +1805,446 @@ export function useGetRadarIntelligence<TData = Awaited<ReturnType<typeof getRad
 
 
 
+
+export const getGetRadarIntegrationsOverviewUrl = () => {
+
+
+
+
+  return `/api/radar/integrations/overview`
+}
+
+/**
+ * @summary Read the integration control plane and department dashboard catalog
+ */
+export const getRadarIntegrationsOverview = async ( options?: Parameters<typeof customFetch>[1]): Promise<RadarIntegrationsOverview> => {
+
+  return customFetch<RadarIntegrationsOverview>(getGetRadarIntegrationsOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRadarIntegrationsOverviewQueryKey = () => {
+    return [
+    `/api/radar/integrations/overview`
+    ] as const;
+    }
+
+
+export const getGetRadarIntegrationsOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getRadarIntegrationsOverview>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarIntegrationsOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRadarIntegrationsOverviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRadarIntegrationsOverview>>> = ({ signal }) => getRadarIntegrationsOverview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRadarIntegrationsOverview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRadarIntegrationsOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getRadarIntegrationsOverview>>>
+export type GetRadarIntegrationsOverviewQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read the integration control plane and department dashboard catalog
+ */
+
+export function useGetRadarIntegrationsOverview<TData = Awaited<ReturnType<typeof getRadarIntegrationsOverview>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarIntegrationsOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRadarIntegrationsOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRegisterRadarIntegrationUrl = () => {
+
+
+
+
+  return `/api/radar/integrations`
+}
+
+/**
+ * @summary Register an external system for documented authorization review
+ */
+export const registerRadarIntegration = async (radarIntegrationRegistration: RadarIntegrationRegistration, options?: Parameters<typeof customFetch>[1]): Promise<RadarIntegration> => {
+
+  return customFetch<RadarIntegration>(getRegisterRadarIntegrationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(radarIntegrationRegistration)
+  }
+);}
+
+
+
+
+
+export const getRegisterRadarIntegrationMutationOptions = <TError = ErrorType<ValidationErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerRadarIntegration>>, TError,{data: BodyType<RadarIntegrationRegistration>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerRadarIntegration>>, TError,{data: BodyType<RadarIntegrationRegistration>}, TContext> => {
+
+const mutationKey = ['registerRadarIntegration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerRadarIntegration>>, {data: BodyType<RadarIntegrationRegistration>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  registerRadarIntegration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterRadarIntegrationMutationResult = NonNullable<Awaited<ReturnType<typeof registerRadarIntegration>>>
+    export type RegisterRadarIntegrationMutationBody = BodyType<RadarIntegrationRegistration>
+    export type RegisterRadarIntegrationMutationError = ErrorType<ValidationErrorResponse>
+
+    /**
+ * @summary Register an external system for documented authorization review
+ */
+export const useRegisterRadarIntegration = <TError = ErrorType<ValidationErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerRadarIntegration>>, TError,{data: BodyType<RadarIntegrationRegistration>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registerRadarIntegration>>,
+        TError,
+        {data: BodyType<RadarIntegrationRegistration>},
+        TContext
+      > => {
+      return useMutation(getRegisterRadarIntegrationMutationOptions(options));
+    }
+
+export const getUpdateRadarIntegrationUrl = (id: string,) => {
+
+
+
+
+  return `/api/radar/integrations/${id}`
+}
+
+/**
+ * @summary Update authorization metadata or pause an integration
+ */
+export const updateRadarIntegration = async (id: string,
+    radarIntegrationUpdate: RadarIntegrationUpdate, options?: Parameters<typeof customFetch>[1]): Promise<RadarIntegration> => {
+
+  return customFetch<RadarIntegration>(getUpdateRadarIntegrationUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(radarIntegrationUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateRadarIntegrationMutationOptions = <TError = ErrorType<ValidationErrorResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRadarIntegration>>, TError,{id: string;data: BodyType<RadarIntegrationUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRadarIntegration>>, TError,{id: string;data: BodyType<RadarIntegrationUpdate>}, TContext> => {
+
+const mutationKey = ['updateRadarIntegration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRadarIntegration>>, {id: string;data: BodyType<RadarIntegrationUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateRadarIntegration(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRadarIntegrationMutationResult = NonNullable<Awaited<ReturnType<typeof updateRadarIntegration>>>
+    export type UpdateRadarIntegrationMutationBody = BodyType<RadarIntegrationUpdate>
+    export type UpdateRadarIntegrationMutationError = ErrorType<ValidationErrorResponse | NotFoundResponse>
+
+    /**
+ * @summary Update authorization metadata or pause an integration
+ */
+export const useUpdateRadarIntegration = <TError = ErrorType<ValidationErrorResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRadarIntegration>>, TError,{id: string;data: BodyType<RadarIntegrationUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateRadarIntegration>>,
+        TError,
+        {id: string;data: BodyType<RadarIntegrationUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateRadarIntegrationMutationOptions(options));
+    }
+
+export const getCreateRadarWebhookSubscriptionUrl = (id: string,) => {
+
+
+
+
+  return `/api/radar/integrations/${id}/webhooks`
+}
+
+/**
+ * @summary Register a paused webhook subscription
+ */
+export const createRadarWebhookSubscription = async (id: string,
+    radarWebhookRegistration: RadarWebhookRegistration, options?: Parameters<typeof customFetch>[1]): Promise<RadarWebhookSubscription> => {
+
+  return customFetch<RadarWebhookSubscription>(getCreateRadarWebhookSubscriptionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(radarWebhookRegistration)
+  }
+);}
+
+
+
+
+
+export const getCreateRadarWebhookSubscriptionMutationOptions = <TError = ErrorType<ValidationErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRadarWebhookSubscription>>, TError,{id: string;data: BodyType<RadarWebhookRegistration>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createRadarWebhookSubscription>>, TError,{id: string;data: BodyType<RadarWebhookRegistration>}, TContext> => {
+
+const mutationKey = ['createRadarWebhookSubscription'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRadarWebhookSubscription>>, {id: string;data: BodyType<RadarWebhookRegistration>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createRadarWebhookSubscription(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateRadarWebhookSubscriptionMutationResult = NonNullable<Awaited<ReturnType<typeof createRadarWebhookSubscription>>>
+    export type CreateRadarWebhookSubscriptionMutationBody = BodyType<RadarWebhookRegistration>
+    export type CreateRadarWebhookSubscriptionMutationError = ErrorType<ValidationErrorResponse>
+
+    /**
+ * @summary Register a paused webhook subscription
+ */
+export const useCreateRadarWebhookSubscription = <TError = ErrorType<ValidationErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRadarWebhookSubscription>>, TError,{id: string;data: BodyType<RadarWebhookRegistration>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createRadarWebhookSubscription>>,
+        TError,
+        {id: string;data: BodyType<RadarWebhookRegistration>},
+        TContext
+      > => {
+      return useMutation(getCreateRadarWebhookSubscriptionMutationOptions(options));
+    }
+
+export const getListRadarIntegrationDeliveriesUrl = () => {
+
+
+
+
+  return `/api/radar/integrations/deliveries`
+}
+
+/**
+ * @summary Read webhook delivery attempts and recovery state
+ */
+export const listRadarIntegrationDeliveries = async ( options?: Parameters<typeof customFetch>[1]): Promise<RadarIntegrationDelivery[]> => {
+
+  return customFetch<RadarIntegrationDelivery[]>(getListRadarIntegrationDeliveriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRadarIntegrationDeliveriesQueryKey = () => {
+    return [
+    `/api/radar/integrations/deliveries`
+    ] as const;
+    }
+
+
+export const getListRadarIntegrationDeliveriesQueryOptions = <TData = Awaited<ReturnType<typeof listRadarIntegrationDeliveries>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRadarIntegrationDeliveries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRadarIntegrationDeliveriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRadarIntegrationDeliveries>>> = ({ signal }) => listRadarIntegrationDeliveries({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRadarIntegrationDeliveries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRadarIntegrationDeliveriesQueryResult = NonNullable<Awaited<ReturnType<typeof listRadarIntegrationDeliveries>>>
+export type ListRadarIntegrationDeliveriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read webhook delivery attempts and recovery state
+ */
+
+export function useListRadarIntegrationDeliveries<TData = Awaited<ReturnType<typeof listRadarIntegrationDeliveries>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRadarIntegrationDeliveries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRadarIntegrationDeliveriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRetryRadarIntegrationDeliveryUrl = (id: string,) => {
+
+
+
+
+  return `/api/radar/integrations/deliveries/${id}/retry`
+}
+
+/**
+ * @summary Queue a failed delivery for a later authorized retry
+ */
+export const retryRadarIntegrationDelivery = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<RadarIntegrationDelivery> => {
+
+  return customFetch<RadarIntegrationDelivery>(getRetryRadarIntegrationDeliveryUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRetryRadarIntegrationDeliveryMutationOptions = <TError = ErrorType<NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retryRadarIntegrationDelivery>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof retryRadarIntegrationDelivery>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['retryRadarIntegrationDelivery'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retryRadarIntegrationDelivery>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  retryRadarIntegrationDelivery(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetryRadarIntegrationDeliveryMutationResult = NonNullable<Awaited<ReturnType<typeof retryRadarIntegrationDelivery>>>
+
+    export type RetryRadarIntegrationDeliveryMutationError = ErrorType<NotFoundResponse>
+
+    /**
+ * @summary Queue a failed delivery for a later authorized retry
+ */
+export const useRetryRadarIntegrationDelivery = <TError = ErrorType<NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retryRadarIntegrationDelivery>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof retryRadarIntegrationDelivery>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getRetryRadarIntegrationDeliveryMutationOptions(options));
+    }
 
 export const getSearchRadarUrl = (params: SearchRadarParams,) => {
   const normalizedParams = new URLSearchParams();
