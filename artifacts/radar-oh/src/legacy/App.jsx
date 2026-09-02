@@ -1,18 +1,27 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Activity,
+  ArrowUpRight,
+  BellRing,
+  Building2,
+  Check,
+  ChevronDown,
+  CircleDot,
+  Download,
+  Gauge,
+  History,
+  Layers3,
+  ListChecks,
+  MapPin,
+  Menu,
+  Plus,
   Radar,
   Search,
-  Building2,
   Tags,
-  ListChecks,
-  Plus,
+  Target,
   Trash2,
-  X,
-  Loader2,
-  MapPin,
-  Download,
   Upload,
-  ChevronDown,
+  X,
 } from "lucide-react";
 
 const KEYS = {
@@ -21,7 +30,6 @@ const KEYS = {
   keywords: "radar-oh:keywords",
   plan: "radar-oh:plan",
 };
-
 const TIPOS_FUENTE = ["Buscadores", "Redes sociales", "Portales y directorios", "Prensa y sector"];
 const FRECUENCIAS = ["Diaria", "Semanal", "Mensual"];
 const PRIORIDADES = ["alta", "media", "baja"];
@@ -29,8 +37,8 @@ const VOLUMENES = ["Alto", "Medio", "Bajo"];
 const HORIZONTES = ["30", "60", "90"];
 const HORIZONTE_LABEL = { "30": "Primeros 30 días", "60": "Días 31–60", "90": "Días 61–90" };
 const TARGET_COMPETITORS = 15;
-
-const uid = () => (crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
+const uid = () =>
+  typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 
 async function loadKey(key) {
   try {
@@ -43,11 +51,10 @@ async function loadKey(key) {
 async function saveKey(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    console.error("No se pudo guardar", key, e);
+  } catch (error) {
+    console.error("No se pudo guardar", key, error);
   }
 }
-
 const emptyCompetitor = () => ({
   id: uid(),
   nombre: "",
@@ -76,6 +83,7 @@ export default function RadarOH() {
   const [addingSource, setAddingSource] = useState(false);
   const [addingKeyword, setAddingKeyword] = useState(false);
   const [newPlanText, setNewPlanText] = useState({ "30": "", "60": "", "90": "" });
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const importInputRef = useRef(null);
 
   useEffect(() => {
@@ -86,38 +94,46 @@ export default function RadarOH() {
         loadKey(KEYS.keywords),
         loadKey(KEYS.plan),
       ]);
-      if (s) setSources(s);
-      if (c) setCompetitors(c);
-      if (k) setKeywords(k);
-      if (p) setPlan(p);
+      if (Array.isArray(s)) setSources(s);
+      if (Array.isArray(c)) setCompetitors(c);
+      if (Array.isArray(k)) setKeywords(k);
+      if (p && typeof p === "object" && !Array.isArray(p)) {
+        setPlan({ "30": [], "60": [], "90": [], ...p });
+      }
       setLoading(false);
     })();
   }, []);
+  useEffect(() => { if (!loading) saveKey(KEYS.sources, sources); }, [sources, loading]);
+  useEffect(() => { if (!loading) saveKey(KEYS.competitors, competitors); }, [competitors, loading]);
+  useEffect(() => { if (!loading) saveKey(KEYS.keywords, keywords); }, [keywords, loading]);
+  useEffect(() => { if (!loading) saveKey(KEYS.plan, plan); }, [plan, loading]);
 
-  useEffect(() => {
-    if (!loading) saveKey(KEYS.sources, sources);
-  }, [sources, loading]);
-  useEffect(() => {
-    if (!loading) saveKey(KEYS.competitors, competitors);
-  }, [competitors, loading]);
-  useEffect(() => {
-    if (!loading) saveKey(KEYS.keywords, keywords);
-  }, [keywords, loading]);
-  useEffect(() => {
-    if (!loading) saveKey(KEYS.plan, plan);
-  }, [plan, loading]);
+  const planTotal = HORIZONTES.reduce((total, horizon) => total + (plan[horizon] || []).length, 0);
+  const planDone = HORIZONTES.reduce(
+    (total, horizon) => total + (plan[horizon] || []).filter((item) => item.done).length,
+    0,
+  );
+  const revisados = competitors.filter((competitor) => competitor.estado === "revisado").length;
+  const today = useMemo(
+    () => new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" }),
+    [],
+  );
 
+  const selectTab = (nextTab, competitorId = null) => {
+    setTab(nextTab);
+    setMobileNavOpen(false);
+    if (competitorId) setExpandedCompetitor(competitorId);
+  };
   const exportData = () => {
     const payload = { sources, competitors, keywords, plan, exportedAt: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "radar-oh-datos-" + new Date().toISOString().slice(0, 10) + ".json";
+    anchor.download = `radar-oh-datos-${new Date().toISOString().slice(0, 10)}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
   };
-
   const importData = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -130,22 +146,19 @@ export default function RadarOH() {
           throw new Error("La raíz debe ser un objeto JSON.");
         }
         for (const key of collectionKeys) {
-          if (parsed[key] !== undefined && !Array.isArray(parsed[key])) {
-            throw new Error("El campo " + key + " debe ser una lista.");
-          }
+          if (parsed[key] !== undefined && !Array.isArray(parsed[key])) throw new Error(`El campo ${key} debe ser una lista.`);
           if (Array.isArray(parsed[key]) && parsed[key].some((item) => !item || typeof item !== "object" || Array.isArray(item))) {
-            throw new Error("El campo " + key + " contiene registros no válidos.");
+            throw new Error(`El campo ${key} contiene registros no válidos.`);
           }
         }
         if (parsed.plan !== undefined && (!parsed.plan || typeof parsed.plan !== "object" || Array.isArray(parsed.plan))) {
           throw new Error("El campo plan debe ser un objeto.");
         }
-        if (parsed.plan && HORIZONTES.some((h) => parsed.plan[h] !== undefined && !Array.isArray(parsed.plan[h]))) {
+        if (parsed.plan && HORIZONTES.some((horizon) => parsed.plan[horizon] !== undefined && !Array.isArray(parsed.plan[horizon]))) {
           throw new Error("Cada horizonte del plan debe ser una lista.");
         }
-        if ((sources.length || competitors.length || keywords.length || planTotal) && !window.confirm("La importación sustituirá los datos actuales. ¿Continuar?")) {
-          return;
-        }
+        if ((sources.length || competitors.length || keywords.length || planTotal) &&
+          !window.confirm("La importación sustituirá los datos actuales. ¿Continuar?")) return;
         if (parsed.sources !== undefined) setSources(parsed.sources);
         if (parsed.competitors !== undefined) setCompetitors(parsed.competitors);
         if (parsed.keywords !== undefined) setKeywords(parsed.keywords);
@@ -158,1018 +171,275 @@ export default function RadarOH() {
     reader.readAsText(file);
     event.target.value = "";
   };
-  const planTotal = HORIZONTES.reduce((n, h) => n + plan[h].length, 0);
-  const planDone = HORIZONTES.reduce((n, h) => n + plan[h].filter((i) => i.done).length, 0);
-  const revisados = competitors.filter((c) => c.estado === "revisado").length;
-
-  const today = useMemo(
-    () => new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" }),
-    []
-  );
 
   if (loading) {
-    return (
-      <div style={styles.loadingScreen}>
-        <FontImport />
-        <Loader2 className="animate-spin" size={28} color="#7FA5C9" />
-        <span style={{ fontFamily: "'Public Sans', sans-serif", color: "#B9CEE0", marginTop: 12 }}>
-          Cargando RADAR OH…
-        </span>
-      </div>
-    );
+    return <div className="rdo-loading"><div className="rdo-loading-inner"><div className="rdo-loading-mark" /><span>Cargando espacio de inteligencia</span></div></div>;
   }
 
   return (
-    <div style={styles.app}>
-      <FontImport />
-      <div style={styles.gridOverlay} />
-
-      <header style={styles.titleBlock}>
-        <div style={styles.titleBlockLeft}>
-          <div style={styles.eyebrowRow}>
-            <Radar size={18} color="#E2622B" strokeWidth={2.2} />
-            <span style={styles.projectLabel}>OH CASAS MODULARES</span>
-          </div>
-          <h1 style={styles.h1}>RADAR OH</h1>
-          <p style={styles.subtitle}>Vigilancia de competencia e inteligencia de sector</p>
+    <div className="rdo-app">
+      <div className="rdo-shell">
+        <Sidebar tab={tab} onSelect={selectTab} open={mobileNavOpen} today={today} />
+        <div className="rdo-main">
+          <header className="rdo-topbar">
+            <div className="rdo-topbar-left">
+              <button className="rdo-mobile-toggle" onClick={() => setMobileNavOpen(true)} aria-label="Abrir navegación" data-testid="button-open-navigation"><Menu size={20} /></button>
+              <div>
+                <div className="rdo-kicker">OH Casas · inteligencia digital</div>
+                <h1 className="rdo-topbar-title">{tab === "resumen" ? "Centro de control" : tabTitle(tab)}</h1>
+              </div>
+            </div>
+            <div className="rdo-topbar-right">
+              <span className="rdo-date">{today}</span>
+              <div className="rdo-profile"><span className="rdo-avatar">AL</span><span className="rdo-profile-name">Ainhoa López</span></div>
+            </div>
+          </header>
+          <main className="rdo-content">
+            <div className="rdo-utility">
+              <button className="rdo-button secondary" onClick={exportData} data-testid="button-export-data"><Download size={14} /> Exportar datos</button>
+              <button className="rdo-button secondary" onClick={() => importInputRef.current?.click()} data-testid="button-import-data"><Upload size={14} /> Importar datos</button>
+              <input ref={importInputRef} className="rdo-hidden" type="file" accept="application/json" onChange={importData} data-testid="input-import-data" />
+            </div>
+            {tab === "resumen" && (
+              <ResumenTab
+                sources={sources}
+                competitors={competitors}
+                keywords={keywords}
+                revisados={revisados}
+                planDone={planDone}
+                planTotal={planTotal}
+                onJump={(id) => selectTab("competidores", id)}
+                onSelect={selectTab}
+              />
+            )}
+            {tab === "fuentes" && <FuentesTab sources={sources} setSources={setSources} adding={addingSource} setAdding={setAddingSource} />}
+            {tab === "competidores" && (
+              <CompetidoresTab
+                competitors={competitors}
+                setCompetitors={setCompetitors}
+                expandedId={expandedCompetitor}
+                setExpandedId={setExpandedCompetitor}
+              />
+            )}
+            {tab === "keywords" && <KeywordsTab keywords={keywords} setKeywords={setKeywords} adding={addingKeyword} setAdding={setAddingKeyword} />}
+            {tab === "plan" && <PlanTab plan={plan} setPlan={setPlan} newPlanText={newPlanText} setNewPlanText={setNewPlanText} />}
+          </main>
         </div>
-        <div style={styles.titleBlockRight}>
-          <TitleField label="Hoja" value="Día 3 · v1" />
-          <TitleField label="Fecha" value={today} />
-          <TitleField label="Responsable" value="Ainhoa López Perelló" />
+      </div>
+      {mobileNavOpen && <button className="rdo-mobile-scrim" onClick={() => setMobileNavOpen(false)} aria-label="Cerrar navegación" data-testid="button-close-navigation" />}
+    </div>
+  );
+}
+
+function tabTitle(tab) {
+  return { fuentes: "Fuentes de señal", competidores: "Mapa competitivo", keywords: "Keywords estratégicas", plan: "Plan de situación" }[tab] || "RadarOH";
+}
+
+function Sidebar({ tab, onSelect, open, today }) {
+  const items = [
+    { id: "resumen", label: "Resumen", icon: Gauge, group: "Espacio de trabajo" },
+    { id: "fuentes", label: "Fuentes", icon: Search, group: "Espacio de trabajo" },
+    { id: "competidores", label: "Competidores", icon: Building2, group: "Espacio de trabajo" },
+    { id: "keywords", label: "Keywords", icon: Tags, group: "Espacio de trabajo" },
+    { id: "plan", label: "Plan 30–60–90", icon: ListChecks, group: "Espacio de trabajo" },
+    { id: "monitorizacion", label: "Monitorización", icon: Activity, disabled: true, group: "Próximamente" },
+    { id: "alertas", label: "Alertas", icon: BellRing, disabled: true, group: "Próximamente" },
+    { id: "historial", label: "Historial", icon: History, disabled: true, group: "Próximamente" },
+  ];
+  return (
+    <aside className={`rdo-sidebar ${open ? "open" : ""}`}>
+      <div className="rdo-brand">
+        <span className="rdo-brand-mark"><Radar size={19} /></span>
+        <div><div className="rdo-brand-name">RadarOH</div><div className="rdo-brand-sub">OH Casas / signal desk</div></div>
+      </div>
+      {["Espacio de trabajo", "Próximamente"].map((group) => (
+        <div key={group} style={{ marginBottom: group === "Espacio de trabajo" ? 24 : 0 }}>
+          <div className="rdo-nav-label">{group}</div>
+          <nav className="rdo-nav" aria-label={group}>
+            {items.filter((item) => item.group === group).map(({ id, label, icon: Icon, disabled }) => (
+              <button
+                key={id}
+                className={`rdo-nav-item ${tab === id ? "active" : ""} ${disabled ? "disabled" : ""}`}
+                onClick={() => !disabled && onSelect(id)}
+                disabled={disabled}
+                title={disabled ? "Disponible en una fase posterior" : label}
+                data-testid={`nav-${id}`}
+              >
+                <Icon size={16} strokeWidth={1.8} /><span className="rdo-nav-text">{label}</span>
+                {disabled && <span className="rdo-nav-kicker">Pronto</span>}
+              </button>
+            ))}
+          </nav>
         </div>
-      </header>
-
-      <div style={styles.toolbar}>
-        <button onClick={exportData} style={styles.toolbarButton}>
-          <Download size={14} strokeWidth={2.2} />
-          Exportar datos
-        </button>
-        <button onClick={() => importInputRef.current?.click()} style={styles.toolbarButton}>
-          <Upload size={14} strokeWidth={2.2} />
-          Importar datos
-        </button>
-        <input ref={importInputRef} type="file" accept="application/json" onChange={importData} style={{ display: "none" }} />
+      ))}
+      <div className="rdo-sidebar-foot">
+        <div className="rdo-status-line"><span className="rdo-status-dot" /> Base local sincronizada</div>
+        <div style={{ marginTop: 8, color: "hsl(207 20% 57%)", fontFamily: "Space Mono, monospace", fontSize: 9 }}>{today}</div>
       </div>
+    </aside>
+  );
+}
 
-      <nav style={styles.nav}>
-        <TabButton icon={Radar} label="Resumen" active={tab === "resumen"} onClick={() => setTab("resumen")} />
-        <TabButton icon={Search} label="Fuentes" active={tab === "fuentes"} onClick={() => setTab("fuentes")} />
-        <TabButton
-          icon={Building2}
-          label="Competidores"
-          active={tab === "competidores"}
-          onClick={() => setTab("competidores")}
-        />
-        <TabButton icon={Tags} label="Keywords" active={tab === "keywords"} onClick={() => setTab("keywords")} />
-        <TabButton icon={ListChecks} label="Plan 30-60-90" active={tab === "plan"} onClick={() => setTab("plan")} />
-      </nav>
-
-      <main style={styles.sheet}>
-        {tab === "resumen" && (
-          <ResumenTab
-            sources={sources}
-            competitors={competitors}
-            keywords={keywords}
-            revisados={revisados}
-            planDone={planDone}
-            planTotal={planTotal}
-            onJump={(id) => {
-              setTab("competidores");
-              setExpandedCompetitor(id);
-            }}
-          />
-        )}
-
-        {tab === "fuentes" && (
-          <FuentesTab
-            sources={sources}
-            setSources={setSources}
-            adding={addingSource}
-            setAdding={setAddingSource}
-          />
-        )}
-
-        {tab === "competidores" && (
-          <CompetidoresTab
-            competitors={competitors}
-            setCompetitors={setCompetitors}
-            expandedId={expandedCompetitor}
-            setExpandedId={setExpandedCompetitor}
-          />
-        )}
-
-        {tab === "keywords" && (
-          <KeywordsTab
-            keywords={keywords}
-            setKeywords={setKeywords}
-            adding={addingKeyword}
-            setAdding={setAddingKeyword}
-          />
-        )}
-
-        {tab === "plan" && (
-          <PlanTab plan={plan} setPlan={setPlan} newPlanText={newPlanText} setNewPlanText={setNewPlanText} />
-        )}
-      </main>
+function PageIntro({ eyebrow, title, description, action }) {
+  return (
+    <div className="rdo-page-intro">
+      <div><div className="rdo-eyebrow"><CircleDot size={12} /> {eyebrow}</div><h2 className="rdo-page-title">{title}</h2><p className="rdo-page-desc">{description}</p></div>
+      {action && <div className="rdo-actions">{action}</div>}
     </div>
   );
 }
-
-/* ---------- piezas compartidas ---------- */
-
-function FontImport() {
-  return (
-    <style>{`
-      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap');
-      * { box-sizing: border-box; }
-      @keyframes sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      @media (prefers-reduced-motion: reduce) {
-        .radar-sweep { animation: none !important; }
-      }
-      .rdo-input {
-        font-family: 'Public Sans', sans-serif;
-        background: #FFFFFF;
-        border: 1px solid rgba(23,36,47,0.25);
-        border-radius: 3px;
-        padding: 8px 10px;
-        font-size: 13.5px;
-        color: #17242F;
-        width: 100%;
-      }
-      .rdo-input:focus { outline: 2px solid #E2622B; outline-offset: 1px; }
-      .rdo-select {
-        font-family: 'Public Sans', sans-serif;
-        background: #FFFFFF;
-        border: 1px solid rgba(23,36,47,0.25);
-        border-radius: 3px;
-        padding: 8px 10px;
-        font-size: 13.5px;
-        color: #17242F;
-      }
-      .rdo-textarea {
-        font-family: 'Public Sans', sans-serif;
-        background: #FFFFFF;
-        border: 1px solid rgba(23,36,47,0.25);
-        border-radius: 3px;
-        padding: 8px 10px;
-        font-size: 13.5px;
-        color: #17242F;
-        width: 100%;
-        min-height: 56px;
-        resize: vertical;
-      }
-      .rdo-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
-      .rdo-scroll::-webkit-scrollbar-thumb { background: rgba(23,36,47,0.2); border-radius: 3px; }
-    `}</style>
-  );
+function Panel({ children, className = "", pad = true, style }) { return <section className={`rdo-panel ${pad ? "rdo-panel-pad" : ""} ${className}`} style={style}>{children}</section>; }
+function SectionHead({ index, title, description, action }) {
+  return <div className="rdo-section-head"><div><div className="rdo-section-index">{index}</div><h3 className="rdo-section-title">{title}</h3>{description && <p className="rdo-section-note">{description}</p>}</div>{action}</div>;
 }
-
-function TitleField({ label, value }) {
-  return (
-    <div style={{ textAlign: "right" }}>
-      <div style={{ fontFamily: "'Public Sans', sans-serif", fontSize: 10.5, letterSpacing: "0.03em", color: "#7FA5C9" }}>
-        {label}
-      </div>
-      <div style={{ fontFamily: "'Public Sans', sans-serif", fontSize: 13, color: "#EDEEF0", fontWeight: 600 }}>
-        {value}
-      </div>
-    </div>
-  );
+function AddButton({ onClick, label }) { return <button className="rdo-button primary" onClick={onClick} data-testid={`button-add-${label.toLowerCase().replaceAll(" ", "-")}`}><Plus size={14} />{label}</button>; }
+function IconButton({ onClick, title, children, testId }) { return <button className="rdo-icon-button" onClick={onClick} title={title} aria-label={title} data-testid={testId}>{children}</button>; }
+function FormActions({ onCancel, onSave, saveLabel = "Guardar" }) {
+  return <div className="rdo-form-actions"><button className="rdo-button ghost" onClick={onCancel} data-testid="button-cancel-form">Cancelar</button><button className="rdo-button primary" onClick={onSave} data-testid="button-save-form"><Check size={14} />{saveLabel}</button></div>;
 }
+function Field({ label, children, full = false }) { return <label className={`rdo-field ${full ? "rdo-form-grid full" : ""}`}><span className="rdo-field-label">{label}</span>{children}</label>; }
+function EmptyState({ title, text }) { return <div className="rdo-empty"><strong>{title}</strong>{text}</div>; }
+function Badge({ children, tone = "" }) { return <span className={`rdo-badge ${tone}`}>{children}</span>; }
 
-function TabButton({ icon: Icon, label, active, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 7,
-        padding: "10px 16px",
-        border: "none",
-        borderTopLeftRadius: 4,
-        borderTopRightRadius: 4,
-        background: active ? "#F3EFE4" : "transparent",
-        color: active ? "#17242F" : "#9FB8CE",
-        fontFamily: "'Public Sans', sans-serif",
-        fontSize: 13.5,
-        fontWeight: 600,
-        cursor: "pointer",
-        whiteSpace: "nowrap",
-        flexShrink: 0,
-      }}
-    >
-      <Icon size={15} strokeWidth={2.2} />
-      {label}
-    </button>
-  );
-}
-
-function Sheet({ children, style }) {
-  return (
-    <div
-      style={{
-        position: "relative",
-        background: "#FFFFFF",
-        border: "1px solid rgba(23,36,47,0.14)",
-        borderRadius: 4,
-        padding: 16,
-        ...style,
-      }}
-    >
-      <CornerTicks />
-      {children}
-    </div>
-  );
-}
-
-function CornerTicks() {
-  const base = { position: "absolute", width: 9, height: 9, borderColor: "#E2622B" };
+function ResumenTab({ sources, competitors, keywords, revisados, planDone, planTotal, onJump, onSelect }) {
+  const keywordBaseline = keywords.filter((keyword) => keyword.posicion !== "").length;
+  const coverage = Math.min(100, Math.round((competitors.length / TARGET_COMPETITORS) * 100));
+  const radarPoints = competitors.map((competitor, index) => {
+    const angle = (index / Math.max(competitors.length, 1)) * Math.PI * 2 - Math.PI / 2;
+    const radius = competitor.prioridad === "alta" ? 47 : competitor.prioridad === "media" ? 92 : 136;
+    return { ...competitor, x: 180 + radius * Math.cos(angle), y: 180 + radius * Math.sin(angle), color: priorityColor(competitor.prioridad) };
+  });
+  const activity = [
+    competitors.length && `${competitors.length} competidor${competitors.length === 1 ? "" : "es"} en el mapa`,
+    sources.length && `${sources.length} fuente${sources.length === 1 ? "" : "s"} configurada${sources.length === 1 ? "" : "s"}`,
+    keywordBaseline && `${keywordBaseline} keyword${keywordBaseline === 1 ? "" : "s"} con posición base`,
+    planDone && `${planDone} tarea${planDone === 1 ? "" : "s"} del plan completada${planDone === 1 ? "" : "s"}`,
+  ].filter(Boolean);
   return (
     <>
-      <span style={{ ...base, top: -1, left: -1, borderTop: "2px solid #E2622B", borderLeft: "2px solid #E2622B" }} />
-      <span
-        style={{ ...base, bottom: -1, right: -1, borderBottom: "2px solid #E2622B", borderRight: "2px solid #E2622B" }}
+      <PageIntro
+        eyebrow="Lectura operativa · día 3"
+        title="La señal antes que el ruido."
+        description="Un punto de control para entender qué está cubierto, qué requiere revisión y dónde poner la atención siguiente."
+        action={<button className="rdo-button secondary" onClick={() => onSelect("competidores")} data-testid="button-review-map"><Target size={14} /> Revisar mapa</button>}
       />
+      <div className="rdo-stat-grid">
+        <Stat label="Fuentes configuradas" value={sources.length} meta="canales de señal" icon={Search} />
+        <Stat label="Competidores mapeados" value={`${competitors.length} / ${TARGET_COMPETITORS}`} meta={`${revisados} fichas revisadas`} progress={coverage} icon={Building2} />
+        <Stat label="Keywords con base" value={keywordBaseline} meta={`${keywords.length} definidas`} icon={Tags} />
+        <Stat label="Plan ejecutado" value={planTotal ? `${planDone}/${planTotal}` : "—"} meta="tareas completadas" progress={planTotal ? Math.round((planDone / planTotal) * 100) : 0} icon={ListChecks} />
+      </div>
+      <div className="rdo-summary-grid">
+        <Panel className="rdo-radar-panel">
+          <SectionHead index="01 / RADAR DE PRIORIDAD" title="Mapa de vigilancia" description="Cada punto es una ficha. La distancia al centro representa la prioridad de seguimiento." />
+          <div className="rdo-radar-wrap">
+            <div className="rdo-radar">
+              <svg viewBox="0 0 360 360" role="img" aria-label="Radar de competidores por prioridad">
+                {[47, 92, 136].map((radius) => <circle key={radius} cx="180" cy="180" r={radius} fill="none" stroke="hsl(207 16% 82%)" strokeWidth="1" />)}
+                <line x1="44" y1="180" x2="316" y2="180" stroke="hsl(207 16% 88%)" strokeWidth="1" /><line x1="180" y1="44" x2="180" y2="316" stroke="hsl(207 16% 88%)" strokeWidth="1" />
+                <line x1="84" y1="84" x2="276" y2="276" stroke="hsl(207 16% 91%)" strokeWidth="1" /><line x1="276" y1="84" x2="84" y2="276" stroke="hsl(207 16% 91%)" strokeWidth="1" />
+                <circle cx="180" cy="180" r="3" fill="hsl(15 77% 52%)" />
+                {radarPoints.map((point) => <circle key={point.id} cx={point.x} cy={point.y} r="6" fill={point.color} stroke="hsl(0 0% 100%)" strokeWidth="2" style={{ cursor: "pointer" }} onClick={() => onJump(point.id)}><title>{point.nombre || "Sin nombre"}</title></circle>)}
+                <text x="180" y="35" textAnchor="middle" fill="hsl(207 13% 50%)" fontSize="8" fontFamily="Space Mono">ATENCIÓN</text>
+                <text x="180" y="350" textAnchor="middle" fill="hsl(207 13% 50%)" fontSize="8" fontFamily="Space Mono">CONTEXTO</text>
+              </svg>
+              <div className="rdo-radar-sweep" />
+              {!competitors.length && <div className="rdo-radar-empty">Añade competidores<br />para activar el radar</div>}
+            </div>
+          </div>
+          <div className="rdo-radar-legend"><Legend color="hsl(7 65% 47%)" label="Alta · acción próxima" /><Legend color="hsl(38 78% 47%)" label="Media · seguimiento" /><Legend color="hsl(170 31% 42%)" label="Baja · contexto" /></div>
+        </Panel>
+        <div className="rdo-side-stack">
+          <Panel className="rdo-activity">
+            <SectionHead index="02 / ACTIVIDAD" title="Últimas señales" description="Estado actual de la base de trabajo." />
+            {activity.length ? <div className="rdo-activity-list">{activity.map((item, index) => <div className="rdo-activity-item" key={item}><span className="rdo-activity-mark" /><div><div className="rdo-activity-text">{item}</div><div className="rdo-activity-time">{index === 0 ? "Ahora" : "En esta sesión"}</div></div></div>)}</div> : <EmptyState title="Sin actividad todavía" text="Empieza por añadir una fuente o una ficha al mapa." />}
+          </Panel>
+          <Panel className="rdo-insight">
+            <SectionHead index="03 / LECTURA" title="Siguiente movimiento" />
+            <p>{competitors.length < TARGET_COMPETITORS ? <>El mapa está al <strong>{coverage}%</strong> del objetivo inicial. Completa las fichas antes de sacar conclusiones de mercado.</> : <>El objetivo inicial de fichas está cubierto. Revisa las prioridades altas y actualiza las posiciones base.</>}</p>
+          </Panel>
+        </div>
+      </div>
+      <Panel style={{ marginTop: 14 }}>
+        <SectionHead index="04 / COBERTURA" title="Inventario de inteligencia" description="Accesos directos a las colecciones que sostienen el análisis." />
+        <div className="rdo-collection">
+          <CollectionRow icon={Search} title="Fuentes y búsquedas" note="Términos, canales y cadencia de revisión" count={sources.length} action={() => onSelect("fuentes")} />
+          <CollectionRow icon={Building2} title="Competidores" note="Fichas de empresas y prioridades de vigilancia" count={competitors.length} action={() => onSelect("competidores")} />
+          <CollectionRow icon={Layers3} title="Plan de situación" note="Acciones ordenadas por horizonte temporal" count={planTotal ? `${planDone}/${planTotal}` : "—"} action={() => onSelect("plan")} />
+        </div>
+      </Panel>
+    </>
+  );
+}
+function Stat({ label, value, meta, progress, icon: Icon }) {
+  return <div className="rdo-stat"><Icon size={15} color="hsl(15 77% 52%)" /><div className="rdo-stat-value" data-testid={`value-${label.toLowerCase().replaceAll(" ", "-")}`}>{value}</div><div className="rdo-stat-label">{label}</div><div className="rdo-stat-meta">{meta}</div>{progress !== undefined && <div className="rdo-progress"><span style={{ width: `${progress}%` }} /></div>}</div>;
+}
+function Legend({ color, label }) { return <span className="rdo-legend"><i style={{ background: color }} />{label}</span>; }
+function CollectionRow({ icon: Icon, title, note, count, action }) {
+  return <button className="rdo-collection-row" onClick={action} data-testid={`button-open-${title.toLowerCase().replaceAll(" ", "-")}`}><span className="rdo-row-icon"><Icon size={15} /></span><span className="rdo-row-main"><span className="rdo-row-title">{title}</span><span className="rdo-row-note">{note}</span></span><span className="rdo-row-end"><Badge tone="signal">{count}</Badge><ArrowUpRight size={15} color="hsl(207 13% 60%)" /></span></button>;
+}
+function priorityColor(priority) { return priority === "alta" ? "hsl(7 65% 47%)" : priority === "media" ? "hsl(38 78% 47%)" : "hsl(170 31% 42%)"; }
+
+function FuentesTab({ sources, setSources, adding, setAdding }) {
+  const [draft, setDraft] = useState(emptySource());
+  const save = () => {
+    if (!draft.termino.trim()) return;
+    setSources([...sources, draft]); setDraft(emptySource()); setAdding(false);
+  };
+  const grouped = TIPOS_FUENTE.map((tipo) => ({ tipo, items: sources.filter((source) => source.tipo === tipo) }));
+  return (
+    <>
+      <PageIntro eyebrow="01 / señales" title="Fuentes de señal" description="Términos, canales y frecuencia con los que se seguirá a OH Casas y al mercado." action={!adding && <AddButton onClick={() => setAdding(true)} label="Añadir fuente" />} />
+      {adding && <Panel><SectionHead index="NUEVA FUENTE" title="Configurar señal" description="Define qué debe entrar en tu lectura recurrente." /><div className="rdo-form-grid three"><Field label="Término o búsqueda" full={false}><input autoFocus className="rdo-control" placeholder="Ej. casas modulares Valencia" value={draft.termino} onChange={(event) => setDraft({ ...draft, termino: event.target.value })} data-testid="input-source-term" /></Field><Field label="Tipo"><select className="rdo-control" value={draft.tipo} onChange={(event) => setDraft({ ...draft, tipo: event.target.value })} data-testid="select-source-type">{TIPOS_FUENTE.map((type) => <option key={type}>{type}</option>)}</select></Field><Field label="Frecuencia"><select className="rdo-control" value={draft.frecuencia} onChange={(event) => setDraft({ ...draft, frecuencia: event.target.value })} data-testid="select-source-frequency">{FRECUENCIAS.map((frequency) => <option key={frequency}>{frequency}</option>)}</select></Field><Field label="Notas" full><textarea className="rdo-control textarea" placeholder="Contexto de esta fuente (opcional)" value={draft.notas} onChange={(event) => setDraft({ ...draft, notas: event.target.value })} data-testid="textarea-source-notes" /></Field></div><FormActions onCancel={() => { setAdding(false); setDraft(emptySource()); }} onSave={save} /></Panel>}
+      <div style={{ marginTop: adding ? 14 : 0 }}>{sources.length === 0 && !adding ? <EmptyState title="El radar todavía no recibe señales" text="Añade la primera búsqueda o canal que quieras vigilar." /> : grouped.filter((group) => group.items.length).map((group) => <div key={group.tipo} style={{ marginBottom: 24 }}><div className="rdo-section-index" style={{ margin: "0 0 8px 2px" }}>{group.tipo}</div><div className="rdo-collection">{group.items.map((source) => <div className="rdo-collection-row" key={source.id}><span className="rdo-row-icon"><Search size={15} /></span><span className="rdo-row-main"><span className="rdo-row-title">{source.termino}</span><span className="rdo-row-note">{source.notas || "Sin notas adicionales"}</span></span><span className="rdo-row-end"><Badge tone={source.frecuencia === "Diaria" ? "signal" : source.frecuencia === "Semanal" ? "amber" : ""}>{source.frecuencia}</Badge><IconButton title="Eliminar fuente" testId={`button-delete-source-${source.id}`} onClick={() => window.confirm("¿Eliminar esta fuente?") && setSources(sources.filter((item) => item.id !== source.id))}><Trash2 size={15} /></IconButton></span></div>)}</div></div>)}</div>
     </>
   );
 }
 
-function SectionHeading({ title, description, action }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
-      <div>
-        <h2 style={styles.h2}>{title}</h2>
-        {description && <p style={styles.sectionDesc}>{description}</p>}
-      </div>
-      {action}
-    </div>
-  );
-}
-
-function AddButton({ onClick, label }) {
-  return (
-    <button onClick={onClick} style={styles.addButton}>
-      <Plus size={15} strokeWidth={2.4} />
-      {label}
-    </button>
-  );
-}
-
-function IconGhostButton({ onClick, children, title }) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      style={{
-        border: "none",
-        background: "transparent",
-        color: "#8A5A46",
-        cursor: "pointer",
-        padding: 4,
-        display: "flex",
-        alignItems: "center",
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-/* ---------- Resumen ---------- */
-
-function ResumenTab({ sources, competitors, keywords, revisados, planDone, planTotal, onJump }) {
-  const maxR = 118;
-  const cx = 140;
-  const cy = 140;
-  const radiusFor = (p) => (p === "alta" ? maxR * 0.32 : p === "media" ? maxR * 0.62 : maxR * 0.92);
-  const colorFor = (p) => (p === "alta" ? "#C1462F" : p === "media" ? "#D8A23D" : "#5C8A66");
-
-  const points = competitors.map((c, i) => {
-    const angle = (i / Math.max(competitors.length, 1)) * Math.PI * 2 - Math.PI / 2;
-    const r = radiusFor(c.prioridad);
-    return {
-      ...c,
-      x: cx + r * Math.cos(angle),
-      y: cy + r * Math.sin(angle),
-      color: colorFor(c.prioridad),
-    };
-  });
-
-  return (
-    <div>
-      <SectionHeading
-        title="Objetivo del día 3"
-        description="Configurar el primer listado de vigilancia, mapear 10–15 competidores de casas modulares, definir palabras clave y dejar lista una base para el informe 30-60-90."
-      />
-
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 300px) 1fr", gap: 20 }} className="rdo-grid-resumen">
-        <style>{`
-          @media (max-width: 720px) {
-            .rdo-grid-resumen { grid-template-columns: 1fr !important; }
-          }
-        `}</style>
-
-        <Sheet style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: 20 }}>
-          <div style={{ position: "relative", width: 280, height: 280, maxWidth: "100%" }}>
-            <svg viewBox="0 0 280 280" width="100%" height="100%">
-              {[0.32, 0.62, 0.92].map((f) => (
-                <circle key={f} cx={cx} cy={cy} r={maxR * f} fill="none" stroke="rgba(23,36,47,0.14)" strokeWidth="1" />
-              ))}
-              <line x1={cx} y1={20} x2={cx} y2={260} stroke="rgba(23,36,47,0.08)" strokeWidth="1" />
-              <line x1={20} y1={cy} x2={260} y2={cy} stroke="rgba(23,36,47,0.08)" strokeWidth="1" />
-              {points.map((p) => (
-                <circle
-                  key={p.id}
-                  cx={p.x}
-                  cy={p.y}
-                  r={5}
-                  fill={p.color}
-                  stroke="#FFFFFF"
-                  strokeWidth="1.5"
-                  style={{ cursor: "pointer" }}
-                  onClick={() => onJump(p.id)}
-                >
-                  <title>{p.nombre || "Sin nombre"}</title>
-                </circle>
-              ))}
-            </svg>
-            <div
-              className="radar-sweep"
-              style={{
-                position: "absolute",
-                inset: 0,
-                borderRadius: "50%",
-                background: "conic-gradient(from 0deg, rgba(226,98,43,0.28), transparent 28%)",
-                animation: "sweep 6s linear infinite",
-                pointerEvents: "none",
-                mixBlendMode: "multiply",
-              }}
-            />
-          </div>
-          <p style={{ fontFamily: "'Public Sans', sans-serif", fontSize: 12, color: "#5B6A73", textAlign: "center", marginTop: 6 }}>
-            Cada punto es un competidor, situado por prioridad de vigilancia. Toca uno para abrir su ficha.
-          </p>
-          <div style={{ display: "flex", gap: 14, marginTop: 10, flexWrap: "wrap", justifyContent: "center" }}>
-            <Legend color="#C1462F" label="Prioridad alta" />
-            <Legend color="#D8A23D" label="Prioridad media" />
-            <Legend color="#5C8A66" label="Prioridad baja" />
-          </div>
-        </Sheet>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-          <StatCard label="Fuentes configuradas" value={sources.length} hint="búsquedas y canales a vigilar" />
-          <StatCard
-            label="Competidores mapeados"
-            value={`${competitors.length} / ${TARGET_COMPETITORS}`}
-            hint={`${revisados} con ficha revisada`}
-          />
-          <StatCard label="Keywords con línea base" value={keywords.filter((k) => k.posicion !== "").length} hint={`de ${keywords.length} definidas`} />
-          <StatCard label="Plan 30-60-90" value={planTotal ? `${planDone}/${planTotal}` : "—"} hint="tareas completadas" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Legend({ color, label }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
-      <span style={{ fontFamily: "'Public Sans', sans-serif", fontSize: 11.5, color: "#5B6A73" }}>{label}</span>
-    </div>
-  );
-}
-
-function StatCard({ label, value, hint }) {
-  return (
-    <Sheet style={{ padding: 16 }}>
-      <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 28, fontWeight: 700, color: "#17242F" }}>{value}</div>
-      <div style={{ fontFamily: "'Public Sans', sans-serif", fontSize: 12.5, color: "#3A4A54", fontWeight: 600, marginTop: 2 }}>
-        {label}
-      </div>
-      <div style={{ fontFamily: "'Public Sans', sans-serif", fontSize: 11.5, color: "#8A9AA4", marginTop: 2 }}>{hint}</div>
-    </Sheet>
-  );
-}
-
-/* ---------- Fuentes ---------- */
-
-function FuentesTab({ sources, setSources, adding, setAdding }) {
-  const [draft, setDraft] = useState(emptySource());
-
-  const save = () => {
-    if (!draft.termino.trim()) return;
-    setSources([...sources, draft]);
-    setDraft(emptySource());
-    setAdding(false);
-  };
-
-  const grouped = TIPOS_FUENTE.map((tipo) => ({ tipo, items: sources.filter((s) => s.tipo === tipo) }));
-
-  return (
-    <div>
-      <SectionHeading
-        title="Fuentes y búsquedas a vigilar"
-        description="El listado inicial de términos, canales y frecuencia con los que se seguirá a OH Casas y a la competencia."
-        action={!adding && <AddButton onClick={() => setAdding(true)} label="Añadir fuente" />}
-      />
-
-      {adding && (
-        <Sheet style={{ marginBottom: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 10 }} className="rdo-form-3col">
-            <style>{`@media (max-width:640px){ .rdo-form-3col{ grid-template-columns:1fr !important; } }`}</style>
-            <input
-              className="rdo-input"
-              placeholder="Término o búsqueda a vigilar"
-              value={draft.termino}
-              onChange={(e) => setDraft({ ...draft, termino: e.target.value })}
-              autoFocus
-            />
-            <select className="rdo-select" value={draft.tipo} onChange={(e) => setDraft({ ...draft, tipo: e.target.value })}>
-              {TIPOS_FUENTE.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
-            <select className="rdo-select" value={draft.frecuencia} onChange={(e) => setDraft({ ...draft, frecuencia: e.target.value })}>
-              {FRECUENCIAS.map((f) => (
-                <option key={f}>{f}</option>
-              ))}
-            </select>
-          </div>
-          <textarea
-            className="rdo-textarea"
-            placeholder="Notas (opcional)"
-            style={{ marginTop: 10 }}
-            value={draft.notas}
-            onChange={(e) => setDraft({ ...draft, notas: e.target.value })}
-          />
-          <FormActions
-            onCancel={() => {
-              setAdding(false);
-              setDraft(emptySource());
-            }}
-            onSave={save}
-          />
-        </Sheet>
-      )}
-
-      {sources.length === 0 && !adding && (
-        <EmptyState text="Todavía no hay fuentes configuradas. Añade la primera búsqueda o canal que quieras vigilar." />
-      )}
-
-      {grouped
-        .filter((g) => g.items.length > 0)
-        .map((g) => (
-          <div key={g.tipo} style={{ marginBottom: 18 }}>
-            <div style={styles.groupLabel}>{g.tipo}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {g.items.map((s) => (
-                <div key={s.id} style={styles.row}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: "'Public Sans', sans-serif", fontSize: 13.5, color: "#17242F", fontWeight: 600 }}>
-                      {s.termino}
-                    </div>
-                    {s.notas && <div style={styles.rowNote}>{s.notas}</div>}
-                  </div>
-                  <span style={styles.pill}>{s.frecuencia}</span>
-                  <IconGhostButton title="Eliminar" onClick={() => setSources(sources.filter((x) => x.id !== s.id))}>
-                    <Trash2 size={15} />
-                  </IconGhostButton>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-    </div>
-  );
-}
-
-function FormActions({ onCancel, onSave, saveLabel = "Guardar" }) {
-  return (
-    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 12 }}>
-      <button onClick={onCancel} style={styles.ghostAction}>
-        Cancelar
-      </button>
-      <button onClick={onSave} style={styles.primaryAction}>
-        {saveLabel}
-      </button>
-    </div>
-  );
-}
-
-function EmptyState({ text }) {
-  return (
-    <div
-      style={{
-        border: "1px dashed rgba(23,36,47,0.25)",
-        borderRadius: 4,
-        padding: "26px 18px",
-        textAlign: "center",
-        fontFamily: "'Public Sans', sans-serif",
-        fontSize: 13,
-        color: "#6D7B84",
-      }}
-    >
-      {text}
-    </div>
-  );
-}
-
-/* ---------- Competidores ---------- */
-
 function CompetidoresTab({ competitors, setCompetitors, expandedId, setExpandedId }) {
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState(emptyCompetitor());
-
-  const startAdd = () => {
-    setDraft(emptyCompetitor());
-    setAdding(true);
-  };
-  const saveNew = () => {
-    if (!draft.nombre.trim()) return;
-    setCompetitors([...competitors, draft]);
-    setAdding(false);
-  };
-  const update = (id, patch) => setCompetitors(competitors.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-  const remove = (id) => {
-    setCompetitors(competitors.filter((c) => c.id !== id));
-    if (expandedId === id) setExpandedId(null);
-  };
-
+  const saveNew = () => { if (!draft.nombre.trim()) return; setCompetitors([...competitors, draft]); setAdding(false); setDraft(emptyCompetitor()); };
+  const update = (id, patch) => setCompetitors(competitors.map((competitor) => competitor.id === id ? { ...competitor, ...patch } : competitor));
+  const remove = (id) => { if (!window.confirm("¿Eliminar esta ficha del mapa?")) return; setCompetitors(competitors.filter((competitor) => competitor.id !== id)); if (expandedId === id) setExpandedId(null); };
   return (
-    <div>
-      <SectionHeading
-        title="Ficha de competidores"
-        description={`Empresas de casas modulares a seguir. Objetivo inicial: ${TARGET_COMPETITORS} fichas.`}
-        action={!adding && <AddButton onClick={startAdd} label="Añadir competidor" />}
-      />
-
-      {adding && (
-        <Sheet style={{ marginBottom: 16 }}>
-          <CompetitorForm draft={draft} setDraft={setDraft} />
-          <FormActions onCancel={() => setAdding(false)} onSave={saveNew} saveLabel="Añadir a RADAR OH" />
-        </Sheet>
-      )}
-
-      {competitors.length === 0 && !adding && (
-        <EmptyState text="Aún no hay competidores mapeados. Añade la primera empresa de casas modulares a seguir." />
-      )}
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }} className="rdo-comp-grid">
-        <style>{`@media (max-width:760px){ .rdo-comp-grid{ grid-template-columns:1fr !important; } }`}</style>
-        {competitors.map((c) => (
-          <CompetitorCard
-            key={c.id}
-            c={c}
-            expanded={expandedId === c.id}
-            onToggle={() => setExpandedId(expandedId === c.id ? null : c.id)}
-            onUpdate={(patch) => update(c.id, patch)}
-            onRemove={() => remove(c.id)}
-          />
-        ))}
-      </div>
-    </div>
+    <>
+      <PageIntro eyebrow="02 / mapa competitivo" title="Competidores" description={`Fichas de empresas de casas modulares a seguir. El objetivo inicial es construir un mapa de ${TARGET_COMPETITORS} actores.`} action={!adding && <AddButton onClick={() => { setDraft(emptyCompetitor()); setAdding(true); }} label="Añadir competidor" />} />
+      {adding && <Panel><SectionHead index="NUEVA FICHA" title="Añadir al mapa" description="Registra primero el contexto que permitirá priorizar la vigilancia." /><CompetitorForm draft={draft} setDraft={setDraft} /><FormActions onCancel={() => setAdding(false)} onSave={saveNew} saveLabel="Añadir al radar" /></Panel>}
+      <div style={{ marginTop: adding ? 14 : 0 }}>{competitors.length === 0 && !adding ? <EmptyState title="El mapa está vacío" text="Añade la primera empresa de casas modulares a seguir." /> : <div className="rdo-collection">{competitors.map((competitor) => <CompetitorCard key={competitor.id} c={competitor} expanded={expandedId === competitor.id} onToggle={() => setExpandedId(expandedId === competitor.id ? null : competitor.id)} onUpdate={(patch) => update(competitor.id, patch)} onRemove={() => remove(competitor.id)} />)}</div>}</div>
+    </>
   );
 }
-
 function CompetitorCard({ c, expanded, onToggle, onUpdate, onRemove }) {
-  const prioColor = c.prioridad === "alta" ? "#C1462F" : c.prioridad === "media" ? "#D8A23D" : "#5C8A66";
-  return (
-    <Sheet style={{ padding: 0, overflow: "hidden" }}>
-      <div
-        onClick={onToggle}
-        style={{ padding: 14, cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 10 }}
-      >
-        <span style={{ width: 8, height: 8, borderRadius: "50%", background: prioColor, marginTop: 6, flexShrink: 0 }} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 15.5, fontWeight: 600, color: "#17242F" }}>
-              {c.nombre || "Sin nombre"}
-            </span>
-            <span style={{ ...styles.pill, background: c.estado === "revisado" ? "#E6EEE4" : "#F3EAD9", color: c.estado === "revisado" ? "#4A6B4F" : "#8A5A22" }}>
-              {c.estado === "revisado" ? "Revisado" : "Pendiente"}
-            </span>
-          </div>
-          <div style={{ display: "flex", gap: 12, marginTop: 4, flexWrap: "wrap" }}>
-            {c.ubicacion && (
-              <span style={styles.metaLine}>
-                <MapPin size={12} /> {c.ubicacion}
-              </span>
-            )}
-            {c.especialidad && <span style={styles.metaLine}>{c.especialidad}</span>}
-          </div>
-        </div>
-        <ChevronDown size={17} color="#8A9AA4" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform .15s", flexShrink: 0 }} />
-      </div>
-
-      {expanded && (
-        <div style={{ padding: 14, borderTop: "1px solid rgba(23,36,47,0.1)" }}>
-          <CompetitorForm draft={c} setDraft={(next) => onUpdate(typeof next === "function" ? next(c) : next)} />
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
-            <button onClick={onRemove} style={{ ...styles.ghostAction, color: "#B14A2E" }}>
-              <Trash2 size={14} style={{ marginRight: 5, verticalAlign: -2 }} />
-              Eliminar
-            </button>
-            <button
-              onClick={() => onUpdate({ estado: c.estado === "revisado" ? "pendiente" : "revisado" })}
-              style={styles.primaryAction}
-            >
-              {c.estado === "revisado" ? "Marcar como pendiente" : "Marcar como revisado"}
-            </button>
-          </div>
-        </div>
-      )}
-    </Sheet>
-  );
+  const tone = c.prioridad === "alta" ? "red" : c.prioridad === "media" ? "amber" : "teal";
+  return <Panel pad={false} className="rdo-competitor-card"><button className="rdo-collection-row" style={{ width: "100%", border: 0, borderRadius: 0, textAlign: "left" }} onClick={onToggle} data-testid={`button-expand-competitor-${c.id}`}><span className="rdo-row-icon" style={{ color: priorityColor(c.prioridad), background: "hsl(207 16% 96%)" }}><Building2 size={15} /></span><span className="rdo-row-main"><span className="rdo-row-title">{c.nombre || "Sin nombre"}</span><span className="rdo-row-note">{[c.ubicacion, c.especialidad].filter(Boolean).join(" · ") || "Sin contexto añadido"}</span></span><span className="rdo-row-end"><Badge tone={tone}>Prioridad {c.prioridad}</Badge><Badge tone={c.estado === "revisado" ? "teal" : ""}>{c.estado === "revisado" ? "Revisado" : "Pendiente"}</Badge><ChevronDown size={16} style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform .15s" }} /></span></button>{expanded && <div style={{ padding: "18px 20px 20px", borderTop: "1px solid hsl(var(--line))" }}><CompetitorForm draft={c} setDraft={(next) => onUpdate(typeof next === "function" ? next(c) : next)} /><div className="rdo-form-actions" style={{ justifyContent: "space-between" }}><button className="rdo-button danger" onClick={onRemove} data-testid={`button-delete-competitor-${c.id}`}><Trash2 size={14} /> Eliminar</button><button className="rdo-button primary" onClick={() => onUpdate({ estado: c.estado === "revisado" ? "pendiente" : "revisado" })} data-testid={`button-toggle-status-${c.id}`}>{c.estado === "revisado" ? "Marcar como pendiente" : "Marcar como revisado"}</button></div></div>}</Panel>;
 }
-
 function CompetitorForm({ draft, setDraft }) {
-  const field = (key) => ({
-    value: draft[key],
-    onChange: (e) => setDraft({ ...draft, [key]: e.target.value }),
-  });
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10 }} className="rdo-form-2col">
-        <style>{`@media (max-width:520px){ .rdo-form-2col{ grid-template-columns:1fr !important; } }`}</style>
-        <input className="rdo-input" placeholder="Nombre de la empresa" {...field("nombre")} />
-        <select className="rdo-select" value={draft.prioridad} onChange={(e) => setDraft({ ...draft, prioridad: e.target.value })}>
-          {PRIORIDADES.map((p) => (
-            <option key={p} value={p}>
-              Prioridad {p}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }} className="rdo-form-2col-b">
-        <style>{`@media (max-width:520px){ .rdo-form-2col-b{ grid-template-columns:1fr !important; } }`}</style>
-        <input className="rdo-input" placeholder="Ubicación" {...field("ubicacion")} />
-        <input className="rdo-input" placeholder="Especialidad / tipología" {...field("especialidad")} />
-        <input className="rdo-input" placeholder="Rango de precio orientativo" {...field("rango_precio")} />
-        <input className="rdo-input" placeholder="Web" {...field("web")} />
-      </div>
-      <input className="rdo-input" placeholder="Redes sociales (perfiles principales)" {...field("redes")} />
-      <textarea className="rdo-textarea" placeholder="Fortalezas" {...field("fortalezas")} />
-      <textarea className="rdo-textarea" placeholder="Debilidades" {...field("debilidades")} />
-      <textarea className="rdo-textarea" placeholder="Notas" {...field("notas")} />
-    </div>
-  );
+  const field = (key) => ({ value: draft[key] || "", onChange: (event) => setDraft({ ...draft, [key]: event.target.value }) });
+  return <div className="rdo-form-grid"><Field label="Nombre de la empresa"><input className="rdo-control" placeholder="Ej. Modular Home" {...field("nombre")} data-testid="input-competitor-name" /></Field><Field label="Prioridad"><select className="rdo-control" value={draft.prioridad} onChange={(event) => setDraft({ ...draft, prioridad: event.target.value })} data-testid="select-competitor-priority">{PRIORIDADES.map((priority) => <option key={priority} value={priority}>Prioridad {priority}</option>)}</select></Field><Field label="Ubicación"><input className="rdo-control" placeholder="Ciudad o área de operación" {...field("ubicacion")} data-testid="input-competitor-location" /></Field><Field label="Especialidad / tipología"><input className="rdo-control" placeholder="Tipología, sistema o nicho" {...field("especialidad")} data-testid="input-competitor-specialty" /></Field><Field label="Rango de precio"><input className="rdo-control" placeholder="Orientativo" {...field("rango_precio")} data-testid="input-competitor-price" /></Field><Field label="Web"><input className="rdo-control" placeholder="https://" {...field("web")} data-testid="input-competitor-web" /></Field><Field label="Redes sociales" full><input className="rdo-control" placeholder="Perfiles principales" {...field("redes")} data-testid="input-competitor-social" /></Field><Field label="Fortalezas" full><textarea className="rdo-control textarea" {...field("fortalezas")} data-testid="textarea-competitor-strengths" /></Field><Field label="Debilidades" full><textarea className="rdo-control textarea" {...field("debilidades")} data-testid="textarea-competitor-weaknesses" /></Field><Field label="Notas" full><textarea className="rdo-control textarea" {...field("notas")} data-testid="textarea-competitor-notes" /></Field></div>;
 }
-
-/* ---------- Keywords ---------- */
 
 function KeywordsTab({ keywords, setKeywords, adding, setAdding }) {
   const [draft, setDraft] = useState(emptyKeyword());
-
-  const save = () => {
-    if (!draft.termino.trim()) return;
-    setKeywords([...keywords, draft]);
-    setDraft(emptyKeyword());
-    setAdding(false);
-  };
-  const update = (id, patch) => setKeywords(keywords.map((k) => (k.id === id ? { ...k, ...patch } : k)));
-
+  const save = () => { if (!draft.termino.trim()) return; setKeywords([...keywords, draft]); setDraft(emptyKeyword()); setAdding(false); };
+  const update = (id, patch) => setKeywords(keywords.map((keyword) => keyword.id === id ? { ...keyword, ...patch } : keyword));
   return (
-    <div>
-      <SectionHeading
-        title="Palabras clave y línea base"
-        description="Términos estratégicos a vigilar, con la posición comprobada manualmente como punto de partida."
-        action={!adding && <AddButton onClick={() => setAdding(true)} label="Añadir keyword" />}
-      />
-
-      {adding && (
-        <Sheet style={{ marginBottom: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 10 }} className="rdo-form-3col">
-            <style>{`@media (max-width:640px){ .rdo-form-3col{ grid-template-columns:1fr !important; } }`}</style>
-            <input
-              className="rdo-input"
-              placeholder="Palabra clave"
-              value={draft.termino}
-              onChange={(e) => setDraft({ ...draft, termino: e.target.value })}
-              autoFocus
-            />
-            <select className="rdo-select" value={draft.volumen} onChange={(e) => setDraft({ ...draft, volumen: e.target.value })}>
-              {VOLUMENES.map((v) => (
-                <option key={v}>{v}</option>
-              ))}
-            </select>
-            <input
-              className="rdo-input"
-              placeholder="Posición base"
-              value={draft.posicion}
-              onChange={(e) => setDraft({ ...draft, posicion: e.target.value })}
-            />
-          </div>
-          <FormActions onCancel={() => setAdding(false)} onSave={save} />
-        </Sheet>
-      )}
-
-      {keywords.length === 0 && !adding && (
-        <EmptyState text="Todavía no hay keywords definidas. Añade la primera palabra clave estratégica." />
-      )}
-
-      {keywords.length > 0 && (
-        <div className="rdo-scroll" style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
-            <thead>
-              <tr>
-                {["Palabra clave", "Volumen", "Posición base", ""].map((h) => (
-                  <th key={h} style={styles.th}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {keywords.map((k) => (
-                <tr key={k.id} style={{ borderTop: "1px solid rgba(23,36,47,0.08)" }}>
-                  <td style={styles.td}>{k.termino}</td>
-                  <td style={styles.td}>
-                    <span
-                      style={{
-                        ...styles.pill,
-                        background: k.volumen === "Alto" ? "#F3E4DE" : k.volumen === "Medio" ? "#F3EAD9" : "#EAEEE9",
-                        color: k.volumen === "Alto" ? "#B14A2E" : k.volumen === "Medio" ? "#8A5A22" : "#5B6A73",
-                      }}
-                    >
-                      {k.volumen}
-                    </span>
-                  </td>
-                  <td style={styles.td}>
-                    <input
-                      className="rdo-input"
-                      style={{ width: 64, padding: "5px 8px" }}
-                      value={k.posicion}
-                      placeholder="—"
-                      onChange={(e) => update(k.id, { posicion: e.target.value })}
-                    />
-                  </td>
-                  <td style={{ ...styles.td, textAlign: "right" }}>
-                    <IconGhostButton title="Eliminar" onClick={() => setKeywords(keywords.filter((x) => x.id !== k.id))}>
-                      <Trash2 size={15} />
-                    </IconGhostButton>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+    <>
+      <PageIntro eyebrow="03 / lenguaje de mercado" title="Keywords estratégicas" description="Términos que ayudan a leer la demanda y establecer una posición manual de partida." action={!adding && <AddButton onClick={() => setAdding(true)} label="Añadir keyword" />} />
+      {adding && <Panel><SectionHead index="NUEVA KEYWORD" title="Añadir término" description="Captura el volumen percibido y la posición base para mantener una referencia." /><div className="rdo-form-grid three"><Field label="Palabra clave"><input autoFocus className="rdo-control" placeholder="Ej. casa modular" value={draft.termino} onChange={(event) => setDraft({ ...draft, termino: event.target.value })} data-testid="input-keyword-term" /></Field><Field label="Volumen"><select className="rdo-control" value={draft.volumen} onChange={(event) => setDraft({ ...draft, volumen: event.target.value })} data-testid="select-keyword-volume">{VOLUMENES.map((volume) => <option key={volume}>{volume}</option>)}</select></Field><Field label="Posición base"><input className="rdo-control" placeholder="Ej. 12" value={draft.posicion} onChange={(event) => setDraft({ ...draft, posicion: event.target.value })} data-testid="input-keyword-position" /></Field></div><FormActions onCancel={() => setAdding(false)} onSave={save} /></Panel>}
+      <div style={{ marginTop: adding ? 14 : 0 }}>{keywords.length === 0 && !adding ? <EmptyState title="Aún no hay keywords" text="Añade el primer término estratégico para crear una línea base." /> : keywords.length > 0 && <div className="rdo-table-wrap"><table className="rdo-table"><thead><tr><th>Palabra clave</th><th>Volumen</th><th>Posición base</th><th style={{ width: 55 }} /></tr></thead><tbody>{keywords.map((keyword) => <tr key={keyword.id}><td><strong>{keyword.termino}</strong>{keyword.notas && <div className="rdo-row-note">{keyword.notas}</div>}</td><td><Badge tone={keyword.volumen === "Alto" ? "red" : keyword.volumen === "Medio" ? "amber" : "teal"}>{keyword.volumen}</Badge></td><td><input className="rdo-control rdo-inline-input" value={keyword.posicion} placeholder="—" onChange={(event) => update(keyword.id, { posicion: event.target.value })} data-testid={`input-keyword-position-${keyword.id}`} /></td><td><IconButton title="Eliminar keyword" testId={`button-delete-keyword-${keyword.id}`} onClick={() => window.confirm("¿Eliminar esta keyword?") && setKeywords(keywords.filter((item) => item.id !== keyword.id))}><Trash2 size={15} /></IconButton></td></tr>)}</tbody></table></div>}</div>
+    </>
   );
 }
-
-/* ---------- Plan 30-60-90 ---------- */
 
 function PlanTab({ plan, setPlan, newPlanText, setNewPlanText }) {
-  const addItem = (h) => {
-    const text = newPlanText[h].trim();
-    if (!text) return;
-    setPlan({ ...plan, [h]: [...plan[h], { id: uid(), text, done: false }] });
-    setNewPlanText({ ...newPlanText, [h]: "" });
-  };
-  const toggle = (h, id) =>
-    setPlan({ ...plan, [h]: plan[h].map((i) => (i.id === id ? { ...i, done: !i.done } : i)) });
-  const remove = (h, id) => setPlan({ ...plan, [h]: plan[h].filter((i) => i.id !== id) });
-
+  const addItem = (horizon) => { const text = newPlanText[horizon].trim(); if (!text) return; setPlan({ ...plan, [horizon]: [...(plan[horizon] || []), { id: uid(), text, done: false }] }); setNewPlanText({ ...newPlanText, [horizon]: "" }); };
+  const toggle = (horizon, id) => setPlan({ ...plan, [horizon]: (plan[horizon] || []).map((item) => item.id === id ? { ...item, done: !item.done } : item) });
+  const remove = (horizon, id) => setPlan({ ...plan, [horizon]: (plan[horizon] || []).filter((item) => item.id !== id) });
   return (
-    <div>
-      <SectionHeading
-        title="Plan de situación 30-60-90"
-        description="El informe entregable del día 3: qué se hará en cada horizonte de tiempo tras el diagnóstico inicial."
-      />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }} className="rdo-plan-grid">
-        <style>{`@media (max-width:760px){ .rdo-plan-grid{ grid-template-columns:1fr !important; } }`}</style>
-        {HORIZONTES.map((h) => (
-          <Sheet key={h}>
-            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 15, fontWeight: 700, color: "#17242F" }}>
-              Día {h}
-            </div>
-            <div style={{ fontFamily: "'Public Sans', sans-serif", fontSize: 12, color: "#8A9AA4", marginBottom: 12 }}>
-              {HORIZONTE_LABEL[h]}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-              {plan[h].length === 0 && (
-                <span style={{ fontFamily: "'Public Sans', sans-serif", fontSize: 12.5, color: "#A6AFB4" }}>
-                  Sin tareas todavía.
-                </span>
-              )}
-              {plan[h].map((item) => (
-                <label key={item.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
-                  <input type="checkbox" checked={item.done} onChange={() => toggle(h, item.id)} style={{ marginTop: 3 }} />
-                  <span
-                    style={{
-                      flex: 1,
-                      fontFamily: "'Public Sans', sans-serif",
-                      fontSize: 13,
-                      color: item.done ? "#A6AFB4" : "#17242F",
-                      textDecoration: item.done ? "line-through" : "none",
-                    }}
-                  >
-                    {item.text}
-                  </span>
-                  <IconGhostButton title="Eliminar" onClick={() => remove(h, item.id)}>
-                    <X size={13} />
-                  </IconGhostButton>
-                </label>
-              ))}
-            </div>
-            <div style={{ display: "flex", gap: 6 }}>
-              <input
-                className="rdo-input"
-                placeholder="Nueva tarea"
-                value={newPlanText[h]}
-                onChange={(e) => setNewPlanText({ ...newPlanText, [h]: e.target.value })}
-                onKeyDown={(e) => e.key === "Enter" && addItem(h)}
-              />
-              <button onClick={() => addItem(h)} style={{ ...styles.primaryAction, padding: "8px 10px" }}>
-                <Plus size={15} />
-              </button>
-            </div>
-          </Sheet>
-        ))}
-      </div>
-    </div>
+    <>
+      <PageIntro eyebrow="04 / ejecución" title="Plan 30–60–90" description="El diagnóstico se convierte en un ritmo de trabajo: qué hacer primero, qué validar después y qué consolidar al final del ciclo." />
+      <div className="rdo-plan-grid">{HORIZONTES.map((horizon) => <Panel key={horizon} className="rdo-plan-card"><div className="rdo-plan-number">Horizonte {horizon}</div><h3 className="rdo-plan-title">Día {horizon}</h3><div className="rdo-plan-subtitle">{HORIZONTE_LABEL[horizon]}</div><div className="rdo-task-list">{(plan[horizon] || []).length === 0 && <div className="rdo-task-empty">Sin tareas todavía.</div>}{(plan[horizon] || []).map((item) => <div className="rdo-task" key={item.id}><input type="checkbox" checked={item.done} onChange={() => toggle(horizon, item.id)} aria-label={`Completar ${item.text}`} data-testid={`checkbox-plan-${item.id}`} /><span className={`rdo-task-text ${item.done ? "done" : ""}`}>{item.text}</span><IconButton title="Eliminar tarea" testId={`button-delete-plan-${item.id}`} onClick={() => remove(horizon, item.id)}><X size={13} /></IconButton></div>)}</div><div className="rdo-task-add"><input className="rdo-control" placeholder="Nueva tarea" value={newPlanText[horizon]} onChange={(event) => setNewPlanText({ ...newPlanText, [horizon]: event.target.value })} onKeyDown={(event) => event.key === "Enter" && addItem(horizon)} data-testid={`input-plan-${horizon}`} /><button className="rdo-button primary" onClick={() => addItem(horizon)} aria-label={`Añadir tarea a día ${horizon}`} data-testid={`button-add-plan-${horizon}`}><Plus size={15} /></button></div></Panel>)}</div>
+    </>
   );
 }
-
-/* ---------- estilos base ---------- */
-
-const styles = {
-  app: {
-    position: "relative",
-    minHeight: "100vh",
-    background: "#14283F",
-    padding: "18px 18px 40px",
-    fontFamily: "'Public Sans', sans-serif",
-  },
-  loadingScreen: {
-    minHeight: "100vh",
-    background: "#14283F",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  gridOverlay: {
-    position: "fixed",
-    inset: 0,
-    pointerEvents: "none",
-    backgroundImage:
-      "linear-gradient(rgba(127,165,201,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(127,165,201,0.07) 1px, transparent 1px)",
-    backgroundSize: "28px 28px",
-  },
-  titleBlock: {
-    position: "relative",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    flexWrap: "wrap",
-    gap: 16,
-    borderBottom: "2px solid #E2622B",
-    paddingBottom: 14,
-    marginBottom: 16,
-    maxWidth: 1080,
-    marginLeft: "auto",
-    marginRight: "auto",
-  },
-  titleBlockLeft: {},
-  titleBlockRight: { display: "flex", gap: 22, flexWrap: "wrap" },
-  eyebrowRow: { display: "flex", alignItems: "center", gap: 7, marginBottom: 4 },
-  projectLabel: { fontFamily: "'Public Sans', sans-serif", fontSize: 11.5, letterSpacing: "0.04em", color: "#B9CEE0" },
-  h1: { fontFamily: "'Space Grotesk', sans-serif", fontSize: 30, fontWeight: 700, color: "#F5F6F2", margin: "2px 0" },
-  subtitle: { fontFamily: "'Public Sans', sans-serif", fontSize: 13.5, color: "#8FA8BE", margin: 0 },
-  h2: { fontFamily: "'Space Grotesk', sans-serif", fontSize: 19, fontWeight: 600, color: "#17242F", margin: 0 },
-  sectionDesc: { fontFamily: "'Public Sans', sans-serif", fontSize: 13, color: "#5B6A73", margin: "4px 0 0", maxWidth: 520 },
-  toolbar: {
-    maxWidth: 1080,
-    margin: "-4px auto 10px",
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  toolbarButton: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    background: "rgba(20,40,63,0.72)",
-    color: "#B9CEE0",
-    border: "1px solid rgba(127,165,201,0.35)",
-    borderRadius: 4,
-    padding: "7px 11px",
-    fontFamily: "'Public Sans', sans-serif",
-    fontSize: 12,
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-  nav: {
-    display: "flex",
-    gap: 2,
-    maxWidth: 1080,
-    margin: "0 auto",
-    overflowX: "auto",
-    paddingLeft: 4,
-  },
-  sheet: {
-    position: "relative",
-    background: "#F3EFE4",
-    maxWidth: 1080,
-    margin: "0 auto",
-    borderRadius: "0 6px 6px 6px",
-    padding: 22,
-    boxShadow: "0 18px 40px rgba(6,14,24,0.35)",
-  },
-  addButton: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    background: "#E2622B",
-    color: "#FFF8F2",
-    border: "none",
-    borderRadius: 4,
-    padding: "9px 14px",
-    fontFamily: "'Public Sans', sans-serif",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-    flexShrink: 0,
-  },
-  primaryAction: {
-    background: "#17242F",
-    color: "#F5F6F2",
-    border: "none",
-    borderRadius: 3,
-    padding: "8px 14px",
-    fontFamily: "'Public Sans', sans-serif",
-    fontSize: 12.5,
-    fontWeight: 600,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ghostAction: {
-    background: "transparent",
-    border: "1px solid rgba(23,36,47,0.25)",
-    color: "#3A4A54",
-    borderRadius: 3,
-    padding: "8px 14px",
-    fontFamily: "'Public Sans', sans-serif",
-    fontSize: 12.5,
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-  groupLabel: {
-    fontFamily: "'Public Sans', sans-serif",
-    fontSize: 11.5,
-    fontWeight: 700,
-    letterSpacing: "0.03em",
-    color: "#8A9AA4",
-    marginBottom: 8,
-  },
-  row: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    background: "#FFFFFF",
-    border: "1px solid rgba(23,36,47,0.1)",
-    borderRadius: 4,
-    padding: "10px 12px",
-  },
-  rowNote: { fontFamily: "'Public Sans', sans-serif", fontSize: 12, color: "#8A9AA4", marginTop: 2 },
-  pill: {
-    fontFamily: "'Public Sans', sans-serif",
-    fontSize: 11,
-    fontWeight: 600,
-    background: "#EAEEE9",
-    color: "#5B6A73",
-    borderRadius: 20,
-    padding: "3px 9px",
-    whiteSpace: "nowrap",
-  },
-  metaLine: {
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-    fontFamily: "'Public Sans', sans-serif",
-    fontSize: 12,
-    color: "#6D7B84",
-  },
-  th: {
-    textAlign: "left",
-    fontFamily: "'Public Sans', sans-serif",
-    fontSize: 11.5,
-    letterSpacing: "0.03em",
-    color: "#8A9AA4",
-    padding: "0 10px 8px",
-  },
-  td: {
-    padding: "10px",
-    fontFamily: "'Public Sans', sans-serif",
-    fontSize: 13,
-    color: "#17242F",
-  },
-};
