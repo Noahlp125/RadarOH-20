@@ -8,7 +8,7 @@ La aplicación se integra en el monorepo como el artefacto @workspace/radar-oh, 
 
 ## Conservación de datos
 
-El JSON original permanece en .local/conversation-workspace/files/attached_assets/ sin modificar. La importación no corrige silenciosamente registros y valida la estructura superior antes de sustituir datos locales.
+El JSON original permanece en .conversation/attached_assets/ sin modificar. La importación no corrige silenciosamente registros y valida la estructura superior antes de sustituir datos locales.
 
 ## Decisiones de sincronización
 

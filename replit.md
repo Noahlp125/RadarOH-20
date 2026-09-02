@@ -29,7 +29,7 @@ Plataforma centralizada de inteligencia competitiva y monitorización digital pa
 - `artifacts/radar-oh/src/legacy/App.jsx` — synchronized functional UI carried over from the original RadarOH
 - `artifacts/radar-oh/docs/radar-oh-fase-1.md` — Phase 1 source-of-truth and preservation decisions
 - `artifacts/radar-oh/docs/legacy-radar-oh-main-App.jsx` — preserved copy of the original `main` source
-- `.local/conversation-workspace/files/attached_assets/` — preserved original JSON and screenshots
+- `.conversation/attached_assets/` — preserved original JSON and screenshots
 - `artifacts/api-server` — existing API service, not yet connected to RadarOH domain data
 - `lib/api-spec/openapi.yaml` — existing API contract, unchanged in Phase 1
 - `lib/db/src/schema/` — existing Drizzle schema location, unchanged in Phase 1
