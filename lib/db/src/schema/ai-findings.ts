@@ -35,6 +35,7 @@ export const radarAiFindings = pgTable(
   },
   (table) => [
     index("radar_ai_findings_analysis_idx").on(table.analysisId),
+    index("radar_ai_findings_change_event_idx").on(table.changeEventId),
     index("radar_ai_findings_workspace_created_idx").on(table.workspaceId, table.createdAt),
     pgPolicy("radar_ai_finding_access", {
       as: "permissive",

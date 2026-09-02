@@ -12,13 +12,23 @@ import {
   listRadarAiAnalyses,
   listRadarAiAlerts,
   updateRadarAiAlert,
+  getRadarExecutiveDashboard,
+  searchRadar,
+  exportRadarExecutiveReport,
+  getRadarAlertPreferences,
+  updateRadarAlertPreferences,
   type RadarState,
   type RadarAiStatus,
   type RadarAiAnalysisRequest,
   type RadarAiAnalysisResponse,
   type RadarAiAnalysis,
   type RadarAiAlert,
-  type RadarAiAlertUpdate
+  type RadarAiAlertUpdate,
+  type GetRadarExecutiveDashboardParams,
+  type RadarSearchResponse,
+  type ExportRadarExecutiveReportParams,
+  type RadarAlertPreferences,
+  type RadarAlertPreferencesUpdate,
 } from "@workspace/api-client-react";
 
 export type RadarLocalState = Omit<RadarState, "workspaceId">;
@@ -79,4 +89,37 @@ export async function fetchRadarAiAlerts(): Promise<RadarAiAlert[]> {
 
 export async function markRadarAiAlert(id: string, data: RadarAiAlertUpdate): Promise<RadarAiAlert> {
   return updateRadarAiAlert(id, data);
+}
+
+export async function fetchRadarExecutiveDashboard(params?: GetRadarExecutiveDashboardParams) {
+  return getRadarExecutiveDashboard(params);
+}
+
+export async function fetchRadarSearch(q: string): Promise<RadarSearchResponse> {
+  return searchRadar({ q });
+}
+
+export async function downloadRadarExecutiveReport(params?: ExportRadarExecutiveReportParams) {
+  const query = new URLSearchParams();
+  if (params?.competitor_id) query.set('competitor_id', params.competitor_id);
+  if (params?.source_id) query.set('source_id', params.source_id);
+  if (params?.from) query.set('from', params.from);
+  if (params?.to) query.set('to', params.to);
+  if (params?.priority) query.set('priority', params.priority);
+  if (params?.event_type) query.set('event_type', params.event_type);
+  if (params?.q) query.set('q', params.q);
+
+  const url = `/api/radar/reports/export?${query.toString()}`;
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `radar-informe-${new Date().toISOString().slice(0, 10)}.csv`;
+  anchor.click();
+}
+
+export async function fetchRadarAlertPreferences(): Promise<RadarAlertPreferences> {
+  return getRadarAlertPreferences();
+}
+
+export async function saveRadarAlertPreferences(data: RadarAlertPreferencesUpdate): Promise<RadarAlertPreferences> {
+  return updateRadarAlertPreferences(data);
 }

@@ -939,3 +939,221 @@ export const UpdateRadarAiAlertResponse = zod.object({
 })
 
 
+/**
+ * @summary Read aggregated executive intelligence metrics
+ */
+export const GetRadarExecutiveDashboardQueryParams = zod.object({
+  "competitor_id": zod.coerce.string().optional(),
+  "source_id": zod.coerce.string().optional(),
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']).optional(),
+  "event_type": zod.coerce.string().optional(),
+  "q": zod.coerce.string().optional()
+})
+
+export const GetRadarExecutiveDashboardResponse = zod.object({
+  "generated_at": zod.string(),
+  "period": zod.object({
+  "from": zod.string(),
+  "to": zod.string()
+}),
+  "filters": zod.object({
+  "competitors": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+})),
+  "sources": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+})),
+  "priorities": zod.array(zod.string()),
+  "event_types": zod.array(zod.string())
+}),
+  "kpis": zod.object({
+  "total_events": zod.number(),
+  "high_priority_events": zod.number(),
+  "active_competitors": zod.number(),
+  "source_health_percent": zod.number(),
+  "average_relevance": zod.number(),
+  "unread_alerts": zod.number()
+}),
+  "by_importance": zod.array(zod.object({
+  "label": zod.string(),
+  "count": zod.number()
+})),
+  "by_type": zod.array(zod.object({
+  "type": zod.string(),
+  "count": zod.number()
+})),
+  "timeline": zod.array(zod.object({
+  "date": zod.string(),
+  "events": zod.number(),
+  "high_priority": zod.number(),
+  "competitors": zod.number()
+})),
+  "trends": zod.array(zod.object({
+  "name": zod.string(),
+  "direction": zod.string(),
+  "current": zod.number(),
+  "previous": zod.number(),
+  "delta": zod.number(),
+  "confidence": zod.number(),
+  "description": zod.string()
+})),
+  "competitor_compare": zod.array(zod.object({
+  "competitor_id": zod.string(),
+  "name": zod.string(),
+  "activity": zod.number(),
+  "relevance": zod.number(),
+  "changes": zod.number(),
+  "high_priority": zod.number(),
+  "importance": zod.number(),
+  "priority": zod.string(),
+  "last_event_at": zod.string().nullable()
+})),
+  "radar_points": zod.array(zod.object({
+  "competitor_id": zod.string(),
+  "name": zod.string(),
+  "activity": zod.number(),
+  "relevance": zod.number(),
+  "changes": zod.number(),
+  "importance": zod.number(),
+  "priority": zod.string()
+})),
+  "findings": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "importance": zod.string(),
+  "relevance": zod.number(),
+  "confidence": zod.number(),
+  "event_type": zod.string(),
+  "opportunity": zod.string(),
+  "risk": zod.string(),
+  "trend": zod.string(),
+  "evidence_ids": zod.array(zod.string())
+})),
+  "alerts": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "importance": zod.string(),
+  "status": zod.string(),
+  "created_at": zod.string()
+})),
+  "activity": zod.array(zod.object({
+  "id": zod.string(),
+  "action": zod.string(),
+  "entity_type": zod.string(),
+  "entity_id": zod.string().nullable(),
+  "metadata": zod.record(zod.string(), zod.unknown()),
+  "created_at": zod.string()
+})),
+  "report": zod.object({
+  "title": zod.string(),
+  "highlights": zod.array(zod.string())
+})
+})
+
+
+/**
+ * @summary Search across RadarOH entities and evidence
+ */
+export const searchRadarQueryQMin = 2;
+export const searchRadarQueryQMax = 160;
+
+
+
+export const SearchRadarQueryParams = zod.object({
+  "q": zod.coerce.string().min(searchRadarQueryQMin).max(searchRadarQueryQMax)
+})
+
+export const SearchRadarResponse = zod.object({
+  "query": zod.string(),
+  "results": zod.array(zod.object({
+  "type": zod.string(),
+  "id": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "created_at": zod.string().optional(),
+  "importance": zod.string().optional()
+}))
+})
+
+
+/**
+ * @summary Export a filtered executive report as CSV
+ */
+export const ExportRadarExecutiveReportQueryParams = zod.object({
+  "competitor_id": zod.coerce.string().optional(),
+  "source_id": zod.coerce.string().optional(),
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']).optional(),
+  "event_type": zod.coerce.string().optional(),
+  "q": zod.coerce.string().optional()
+})
+
+export const ExportRadarExecutiveReportResponse = zod.unknown()
+
+
+/**
+ * @summary Read configurable alert thresholds
+ */
+export const getRadarAlertPreferencesResponseMinimumRelevanceMin = 0;
+export const getRadarAlertPreferencesResponseMinimumRelevanceMax = 100;
+
+export const getRadarAlertPreferencesResponseMinimumConfidenceMin = 0;
+export const getRadarAlertPreferencesResponseMinimumConfidenceMax = 100;
+
+
+
+export const GetRadarAlertPreferencesResponse = zod.object({
+  "enabled": zod.boolean(),
+  "minimum_importance": zod.enum(['low', 'medium', 'high', 'critical']),
+  "minimum_relevance": zod.number().min(getRadarAlertPreferencesResponseMinimumRelevanceMin).max(getRadarAlertPreferencesResponseMinimumRelevanceMax),
+  "minimum_confidence": zod.number().min(getRadarAlertPreferencesResponseMinimumConfidenceMin).max(getRadarAlertPreferencesResponseMinimumConfidenceMax),
+  "internal_enabled": zod.boolean(),
+  "channels": zod.array(zod.string()),
+  "updated_at": zod.string()
+})
+
+
+/**
+ * @summary Update configurable alert thresholds
+ */
+export const updateRadarAlertPreferencesBodyMinimumRelevanceMin = 0;
+export const updateRadarAlertPreferencesBodyMinimumRelevanceMax = 100;
+
+export const updateRadarAlertPreferencesBodyMinimumConfidenceMin = 0;
+export const updateRadarAlertPreferencesBodyMinimumConfidenceMax = 100;
+
+
+
+export const UpdateRadarAlertPreferencesBody = zod.object({
+  "enabled": zod.boolean().optional(),
+  "minimum_importance": zod.enum(['low', 'medium', 'high', 'critical']).optional(),
+  "minimum_relevance": zod.number().min(updateRadarAlertPreferencesBodyMinimumRelevanceMin).max(updateRadarAlertPreferencesBodyMinimumRelevanceMax).optional(),
+  "minimum_confidence": zod.number().min(updateRadarAlertPreferencesBodyMinimumConfidenceMin).max(updateRadarAlertPreferencesBodyMinimumConfidenceMax).optional(),
+  "internal_enabled": zod.boolean().optional()
+})
+
+export const updateRadarAlertPreferencesResponseMinimumRelevanceMin = 0;
+export const updateRadarAlertPreferencesResponseMinimumRelevanceMax = 100;
+
+export const updateRadarAlertPreferencesResponseMinimumConfidenceMin = 0;
+export const updateRadarAlertPreferencesResponseMinimumConfidenceMax = 100;
+
+
+
+export const UpdateRadarAlertPreferencesResponse = zod.object({
+  "enabled": zod.boolean(),
+  "minimum_importance": zod.enum(['low', 'medium', 'high', 'critical']),
+  "minimum_relevance": zod.number().min(updateRadarAlertPreferencesResponseMinimumRelevanceMin).max(updateRadarAlertPreferencesResponseMinimumRelevanceMax),
+  "minimum_confidence": zod.number().min(updateRadarAlertPreferencesResponseMinimumConfidenceMin).max(updateRadarAlertPreferencesResponseMinimumConfidenceMax),
+  "internal_enabled": zod.boolean(),
+  "channels": zod.array(zod.string()),
+  "updated_at": zod.string()
+})
+
+

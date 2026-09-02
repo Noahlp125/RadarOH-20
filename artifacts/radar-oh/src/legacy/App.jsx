@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import GlobalSearch from "../components/GlobalSearch";
+import AlertasPreferences from "../components/AlertasPreferences";
 import {
   Activity,
   AlertTriangle,
@@ -48,6 +50,10 @@ import {
   fetchRadarAiAlerts,
   markRadarAiAlert,
 } from "../data/radarApi";
+
+const EjecutivoTab = lazy(() => import("../components/EjecutivoTab"));
+const ComparativaTab = lazy(() => import("../components/ComparativaTab"));
+const InformesTab = lazy(() => import("../components/InformesTab"));
 
 const KEYS = {
   sources: "radar-oh:sources",
@@ -111,7 +117,7 @@ export default function RadarOH() {
   const [loading, setLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("connecting");
   const [syncError, setSyncError] = useState("");
-  const [tab, setTab] = useState("resumen");
+  const [tab, setTab] = useState("ejecutivo");
   const [sources, setSources] = useState([]);
   const [competitors, setCompetitors] = useState([]);
   const [keywords, setKeywords] = useState([]);
@@ -423,6 +429,7 @@ export default function RadarOH() {
               </div>
             </div>
             <div className="rdo-topbar-right">
+              <GlobalSearch onNavigate={selectTab} />
               <span className="rdo-date">{today}</span>
               <div className="rdo-profile"><span className="rdo-avatar">AL</span><span className="rdo-profile-name">Ainhoa López</span></div>
             </div>
@@ -434,6 +441,11 @@ export default function RadarOH() {
               <button className="rdo-button secondary" onClick={() => importInputRef.current?.click()} data-testid="button-import-data"><Upload size={14} /> Importar datos</button>
               <input ref={importInputRef} className="rdo-hidden" type="file" accept="application/json" onChange={importData} data-testid="input-import-data" />
             </div>
+            <Suspense fallback={<div className="rdo-monitor-loading"><div className="rdo-loading-mark" /> Cargando inteligencia ejecutiva...</div>}>
+              {tab === "ejecutivo" && <EjecutivoTab competitors={competitors} sources={sources} />}
+              {tab === "comparativa" && <ComparativaTab competitors={competitors} />}
+              {tab === "informes" && <InformesTab competitors={competitors} sources={sources} />}
+            </Suspense>
             {tab === "resumen" && (
               <ResumenTab
                 sources={sources}
@@ -461,7 +473,12 @@ export default function RadarOH() {
             {tab === "monitorizacion" && <MonitorizacionTab status={monitorStatus} loading={monitorLoading} error={monitorError} runningSource={runningSource} onRefresh={() => loadMonitorData(false)} onRun={runMonitor} onConfigure={() => selectTab("fuentes")} />}
             {tab === "historial" && <HistorialTab events={monitorHistory} competitors={competitors} loading={monitorLoading} error={monitorError} onRefresh={() => loadMonitorData(true)} />}
             {tab === "insights" && <InsightsTab status={aiStatus} loading={aiLoading} error={aiError} onRun={(limit) => runAiAnalysis(limit)} running={runningAnalysis} />}
-            {tab === "alertas" && <AlertasTab alerts={aiAlerts} loading={aiLoading} error={aiError} onMark={markAlert} onRefresh={() => loadAiData("alertas")} />}
+            {tab === "alertas" && (
+              <>
+                <AlertasPreferences />
+                <AlertasTab alerts={aiAlerts} loading={aiLoading} error={aiError} onMark={markAlert} onRefresh={() => loadAiData("alertas")} />
+              </>
+            )}
             {tab === "historial_ia" && <HistorialIATab analyses={aiAnalyses} loading={aiLoading} error={aiError} onRefresh={() => loadAiData("historial_ia")} />}
           </main>
         </div>
@@ -472,18 +489,21 @@ export default function RadarOH() {
 }
 
 function tabTitle(tab) {
-  return { fuentes: "Fuentes de señal", competidores: "Mapa competitivo", keywords: "Keywords estratégicas", plan: "Plan de situación", monitorizacion: "Monitorización automática", historial: "Historial competitivo", insights: "Insights IA", alertas: "Alertas de mercado", historial_ia: "Historial IA" }[tab] || "RadarOH";
+  return { ejecutivo: "Dashboard Ejecutivo", comparativa: "Comparativa Competitiva", informes: "Informes", fuentes: "Fuentes de señal", competidores: "Mapa competitivo", keywords: "Keywords estratégicas", plan: "Plan de situación", monitorizacion: "Monitorización automática", historial: "Historial competitivo", insights: "Insights IA", alertas: "Alertas de mercado", historial_ia: "Historial IA", resumen: "Centro de control" }[tab] || "RadarOH";
 }
 
 function Sidebar({ tab, onSelect, open, today }) {
   const items = [
-    { id: "resumen", label: "Resumen", icon: Gauge, group: "Espacio de trabajo" },
+    { id: "ejecutivo", label: "Ejecutivo", icon: Gauge, group: "Espacio de trabajo" },
+    { id: "comparativa", label: "Comparativa", icon: Layers3, group: "Espacio de trabajo" },
+    { id: "resumen", label: "Resumen", icon: Activity, group: "Espacio de trabajo" },
     { id: "fuentes", label: "Fuentes", icon: Search, group: "Espacio de trabajo" },
     { id: "competidores", label: "Competidores", icon: Building2, group: "Espacio de trabajo" },
     { id: "keywords", label: "Keywords", icon: Tags, group: "Espacio de trabajo" },
     { id: "plan", label: "Plan 30–60–90", icon: ListChecks, group: "Espacio de trabajo" },
     { id: "monitorizacion", label: "Monitorización", icon: Activity, group: "Inteligencia continua" },
     { id: "historial", label: "Historial", icon: History, group: "Inteligencia continua" },
+    { id: "informes", label: "Informes", icon: Download, group: "Inteligencia continua" },
     { id: "insights", label: "Insights IA", icon: Sparkles, group: "Inteligencia artificial" },
     { id: "alertas", label: "Alertas", icon: BellRing, group: "Inteligencia artificial" },
     { id: "historial_ia", label: "Historial IA", icon: History, group: "Inteligencia artificial" },

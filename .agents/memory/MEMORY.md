@@ -1,2 +1,3 @@
 - [RadarOH build environment](radaroh-build-environment.md) — managed workflows inject both `PORT` and `BASE_PATH`; direct Vite builds need both explicitly.
 - [RadarOH history preservation](radaroh-monitor-history-preservation.md) — snapshot saves never implicitly delete monitored entities; destructive removal is explicit.
+- [OpenAPI date query validation](openapi-date-query-validation.md) — validate Express query strings at the route boundary when generated Zod expects runtime Date objects.

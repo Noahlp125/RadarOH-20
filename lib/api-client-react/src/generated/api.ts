@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ExportRadarExecutiveReportParams,
+  GetRadarExecutiveDashboardParams,
   GetRadarMonitorHistoryParams,
   HealthStatus,
   NotFoundResponse,
@@ -29,10 +31,13 @@ import type {
   RadarAiAnalysisRequest,
   RadarAiAnalysisResponse,
   RadarAiStatus,
+  RadarAlertPreferences,
+  RadarAlertPreferencesUpdate,
   RadarChangeEvent,
   RadarCompetitor,
   RadarCompetitorInput,
   RadarCompetitorUpdate,
+  RadarExecutiveDashboard,
   RadarImportRequest,
   RadarImportResult,
   RadarKeyword,
@@ -41,11 +46,13 @@ import type {
   RadarMonitorRunRequest,
   RadarMonitorRunResult,
   RadarMonitorStatus,
+  RadarSearchResponse,
   RadarSource,
   RadarSourceInput,
   RadarSourceUpdate,
   RadarState,
   RadarStateInput,
+  SearchRadarParams,
   ServerErrorResponse,
   ValidationErrorResponse
 } from './api.schemas';
@@ -1620,5 +1627,405 @@ export const useUpdateRadarAiAlert = <TError = ErrorType<NotFoundResponse>,
         TContext
       > => {
       return useMutation(getUpdateRadarAiAlertMutationOptions(options));
+    }
+
+export const getGetRadarExecutiveDashboardUrl = (params?: GetRadarExecutiveDashboardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/radar/executive?${stringifiedParams}` : `/api/radar/executive`
+}
+
+/**
+ * @summary Read aggregated executive intelligence metrics
+ */
+export const getRadarExecutiveDashboard = async (params?: GetRadarExecutiveDashboardParams, options?: Parameters<typeof customFetch>[1]): Promise<RadarExecutiveDashboard> => {
+
+  return customFetch<RadarExecutiveDashboard>(getGetRadarExecutiveDashboardUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRadarExecutiveDashboardQueryKey = (params?: GetRadarExecutiveDashboardParams,) => {
+    return [
+    `/api/radar/executive`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRadarExecutiveDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getRadarExecutiveDashboard>>, TError = ErrorType<ValidationErrorResponse>>(params?: GetRadarExecutiveDashboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarExecutiveDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRadarExecutiveDashboardQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRadarExecutiveDashboard>>> = ({ signal }) => getRadarExecutiveDashboard(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRadarExecutiveDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRadarExecutiveDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getRadarExecutiveDashboard>>>
+export type GetRadarExecutiveDashboardQueryError = ErrorType<ValidationErrorResponse>
+
+
+/**
+ * @summary Read aggregated executive intelligence metrics
+ */
+
+export function useGetRadarExecutiveDashboard<TData = Awaited<ReturnType<typeof getRadarExecutiveDashboard>>, TError = ErrorType<ValidationErrorResponse>>(
+ params?: GetRadarExecutiveDashboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarExecutiveDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRadarExecutiveDashboardQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSearchRadarUrl = (params: SearchRadarParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/radar/search?${stringifiedParams}` : `/api/radar/search`
+}
+
+/**
+ * @summary Search across RadarOH entities and evidence
+ */
+export const searchRadar = async (params: SearchRadarParams, options?: Parameters<typeof customFetch>[1]): Promise<RadarSearchResponse> => {
+
+  return customFetch<RadarSearchResponse>(getSearchRadarUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchRadarQueryKey = (params?: SearchRadarParams,) => {
+    return [
+    `/api/radar/search`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchRadarQueryOptions = <TData = Awaited<ReturnType<typeof searchRadar>>, TError = ErrorType<ValidationErrorResponse>>(params: SearchRadarParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchRadar>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchRadarQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchRadar>>> = ({ signal }) => searchRadar(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchRadar>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchRadarQueryResult = NonNullable<Awaited<ReturnType<typeof searchRadar>>>
+export type SearchRadarQueryError = ErrorType<ValidationErrorResponse>
+
+
+/**
+ * @summary Search across RadarOH entities and evidence
+ */
+
+export function useSearchRadar<TData = Awaited<ReturnType<typeof searchRadar>>, TError = ErrorType<ValidationErrorResponse>>(
+ params: SearchRadarParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchRadar>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchRadarQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getExportRadarExecutiveReportUrl = (params?: ExportRadarExecutiveReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/radar/reports/export?${stringifiedParams}` : `/api/radar/reports/export`
+}
+
+/**
+ * @summary Export a filtered executive report as CSV
+ */
+export const exportRadarExecutiveReport = async (params?: ExportRadarExecutiveReportParams, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getExportRadarExecutiveReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportRadarExecutiveReportQueryKey = (params?: ExportRadarExecutiveReportParams,) => {
+    return [
+    `/api/radar/reports/export`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getExportRadarExecutiveReportQueryOptions = <TData = Awaited<ReturnType<typeof exportRadarExecutiveReport>>, TError = ErrorType<ValidationErrorResponse>>(params?: ExportRadarExecutiveReportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportRadarExecutiveReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportRadarExecutiveReportQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportRadarExecutiveReport>>> = ({ signal }) => exportRadarExecutiveReport(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportRadarExecutiveReport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportRadarExecutiveReportQueryResult = NonNullable<Awaited<ReturnType<typeof exportRadarExecutiveReport>>>
+export type ExportRadarExecutiveReportQueryError = ErrorType<ValidationErrorResponse>
+
+
+/**
+ * @summary Export a filtered executive report as CSV
+ */
+
+export function useExportRadarExecutiveReport<TData = Awaited<ReturnType<typeof exportRadarExecutiveReport>>, TError = ErrorType<ValidationErrorResponse>>(
+ params?: ExportRadarExecutiveReportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportRadarExecutiveReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportRadarExecutiveReportQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetRadarAlertPreferencesUrl = () => {
+
+
+
+
+  return `/api/radar/alert-preferences`
+}
+
+/**
+ * @summary Read configurable alert thresholds
+ */
+export const getRadarAlertPreferences = async ( options?: Parameters<typeof customFetch>[1]): Promise<RadarAlertPreferences> => {
+
+  return customFetch<RadarAlertPreferences>(getGetRadarAlertPreferencesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRadarAlertPreferencesQueryKey = () => {
+    return [
+    `/api/radar/alert-preferences`
+    ] as const;
+    }
+
+
+export const getGetRadarAlertPreferencesQueryOptions = <TData = Awaited<ReturnType<typeof getRadarAlertPreferences>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarAlertPreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRadarAlertPreferencesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRadarAlertPreferences>>> = ({ signal }) => getRadarAlertPreferences({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRadarAlertPreferences>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRadarAlertPreferencesQueryResult = NonNullable<Awaited<ReturnType<typeof getRadarAlertPreferences>>>
+export type GetRadarAlertPreferencesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read configurable alert thresholds
+ */
+
+export function useGetRadarAlertPreferences<TData = Awaited<ReturnType<typeof getRadarAlertPreferences>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarAlertPreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRadarAlertPreferencesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateRadarAlertPreferencesUrl = () => {
+
+
+
+
+  return `/api/radar/alert-preferences`
+}
+
+/**
+ * @summary Update configurable alert thresholds
+ */
+export const updateRadarAlertPreferences = async (radarAlertPreferencesUpdate: RadarAlertPreferencesUpdate, options?: Parameters<typeof customFetch>[1]): Promise<RadarAlertPreferences> => {
+
+  return customFetch<RadarAlertPreferences>(getUpdateRadarAlertPreferencesUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(radarAlertPreferencesUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateRadarAlertPreferencesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRadarAlertPreferences>>, TError,{data: BodyType<RadarAlertPreferencesUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRadarAlertPreferences>>, TError,{data: BodyType<RadarAlertPreferencesUpdate>}, TContext> => {
+
+const mutationKey = ['updateRadarAlertPreferences'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRadarAlertPreferences>>, {data: BodyType<RadarAlertPreferencesUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateRadarAlertPreferences(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRadarAlertPreferencesMutationResult = NonNullable<Awaited<ReturnType<typeof updateRadarAlertPreferences>>>
+    export type UpdateRadarAlertPreferencesMutationBody = BodyType<RadarAlertPreferencesUpdate>
+    export type UpdateRadarAlertPreferencesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update configurable alert thresholds
+ */
+export const useUpdateRadarAlertPreferences = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRadarAlertPreferences>>, TError,{data: BodyType<RadarAlertPreferencesUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateRadarAlertPreferences>>,
+        TError,
+        {data: BodyType<RadarAlertPreferencesUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateRadarAlertPreferencesMutationOptions(options));
     }
 

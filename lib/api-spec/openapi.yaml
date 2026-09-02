@@ -14,6 +14,8 @@ tags:
     description: RadarOH persistence and migration operations
   - name: radar-ai
     description: Evidence-grounded RadarOH AI analysis and alerts
+  - name: radar-analytics
+    description: Executive intelligence dashboards, search and exports
 paths:
   /healthz:
     get:
@@ -420,6 +422,85 @@ paths:
                 $ref: "#/components/schemas/RadarAiAlert"
         "404":
           $ref: "#/components/responses/NotFound"
+  /radar/executive:
+    get:
+      operationId: getRadarExecutiveDashboard
+      tags: [radar-analytics]
+      summary: Read aggregated executive intelligence metrics
+      parameters:
+        - { name: competitor_id, in: query, required: false, schema: { type: string } }
+        - { name: source_id, in: query, required: false, schema: { type: string } }
+        - { name: from, in: query, required: false, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: false, schema: { type: string, format: date-time } }
+        - { name: priority, in: query, required: false, schema: { type: string, enum: [low, medium, high, critical] } }
+        - { name: event_type, in: query, required: false, schema: { type: string } }
+        - { name: q, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: Executive dashboard
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RadarExecutiveDashboard" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+  /radar/search:
+    get:
+      operationId: searchRadar
+      tags: [radar-analytics]
+      summary: Search across RadarOH entities and evidence
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string, minLength: 2, maxLength: 160 } }
+      responses:
+        "200":
+          description: Global search results
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RadarSearchResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+  /radar/reports/export:
+    get:
+      operationId: exportRadarExecutiveReport
+      tags: [radar-analytics]
+      summary: Export a filtered executive report as CSV
+      parameters:
+        - { name: competitor_id, in: query, required: false, schema: { type: string } }
+        - { name: source_id, in: query, required: false, schema: { type: string } }
+        - { name: from, in: query, required: false, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: false, schema: { type: string, format: date-time } }
+        - { name: priority, in: query, required: false, schema: { type: string, enum: [low, medium, high, critical] } }
+        - { name: event_type, in: query, required: false, schema: { type: string } }
+        - { name: q, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: CSV report
+          content:
+            text/csv: {}
+        "400": { $ref: "#/components/responses/ValidationError" }
+  /radar/alert-preferences:
+    get:
+      operationId: getRadarAlertPreferences
+      tags: [radar-analytics]
+      summary: Read configurable alert thresholds
+      responses:
+        "200":
+          description: Alert preferences
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RadarAlertPreferences" }
+    patch:
+      operationId: updateRadarAlertPreferences
+      tags: [radar-analytics]
+      summary: Update configurable alert thresholds
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RadarAlertPreferencesUpdate" }
+      responses:
+        "200":
+          description: Updated alert preferences
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RadarAlertPreferences" }
 components:
   parameters:
     RadarId:
@@ -843,4 +924,202 @@ components:
         recent_alerts:
           type: array
           items: { $ref: "#/components/schemas/RadarAiAlert" }
+    RadarExecutiveFilterOption:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+    RadarExecutiveDashboard:
+      type: object
+      required: [generated_at, period, filters, kpis, by_importance, by_type, timeline, trends, competitor_compare, radar_points, findings, alerts, activity, report]
+      properties:
+        generated_at: { type: string }
+        period:
+          type: object
+          required: [from, to]
+          properties:
+            from: { type: string }
+            to: { type: string }
+        filters:
+          type: object
+          required: [competitors, sources, priorities, event_types]
+          properties:
+            competitors:
+              type: array
+              items: { $ref: "#/components/schemas/RadarExecutiveFilterOption" }
+            sources:
+              type: array
+              items: { $ref: "#/components/schemas/RadarExecutiveFilterOption" }
+            priorities:
+              type: array
+              items: { type: string }
+            event_types:
+              type: array
+              items: { type: string }
+        kpis:
+          type: object
+          required: [total_events, high_priority_events, active_competitors, source_health_percent, average_relevance, unread_alerts]
+          properties:
+            total_events: { type: number }
+            high_priority_events: { type: number }
+            active_competitors: { type: number }
+            source_health_percent: { type: number }
+            average_relevance: { type: number }
+            unread_alerts: { type: number }
+        by_importance:
+          type: array
+          items:
+            type: object
+            required: [label, count]
+            properties:
+              label: { type: string }
+              count: { type: number }
+        by_type:
+          type: array
+          items:
+            type: object
+            required: [type, count]
+            properties:
+              type: { type: string }
+              count: { type: number }
+        timeline:
+          type: array
+          items:
+            type: object
+            required: [date, events, high_priority, competitors]
+            properties:
+              date: { type: string }
+              events: { type: number }
+              high_priority: { type: number }
+              competitors: { type: number }
+        trends:
+          type: array
+          items:
+            type: object
+            required: [name, direction, current, previous, delta, confidence, description]
+            properties:
+              name: { type: string }
+              direction: { type: string }
+              current: { type: number }
+              previous: { type: number }
+              delta: { type: number }
+              confidence: { type: number }
+              description: { type: string }
+        competitor_compare:
+          type: array
+          items:
+            type: object
+            required: [competitor_id, name, activity, relevance, changes, high_priority, importance, priority, last_event_at]
+            properties:
+              competitor_id: { type: string }
+              name: { type: string }
+              activity: { type: number }
+              relevance: { type: number }
+              changes: { type: number }
+              high_priority: { type: number }
+              importance: { type: number }
+              priority: { type: string }
+              last_event_at: { type: string, nullable: true }
+        radar_points:
+          type: array
+          items:
+            type: object
+            required: [competitor_id, name, activity, relevance, changes, importance, priority]
+            properties:
+              competitor_id: { type: string }
+              name: { type: string }
+              activity: { type: number }
+              relevance: { type: number }
+              changes: { type: number }
+              importance: { type: number }
+              priority: { type: string }
+        findings:
+          type: array
+          items:
+            type: object
+            required: [id, title, summary, importance, relevance, confidence, event_type, opportunity, risk, trend, evidence_ids]
+            properties:
+              id: { type: string }
+              title: { type: string }
+              summary: { type: string }
+              importance: { type: string }
+              relevance: { type: number }
+              confidence: { type: number }
+              event_type: { type: string }
+              opportunity: { type: string }
+              risk: { type: string }
+              trend: { type: string }
+              evidence_ids:
+                type: array
+                items: { type: string }
+        alerts:
+          type: array
+          items:
+            type: object
+            required: [id, title, importance, status, created_at]
+            properties:
+              id: { type: string }
+              title: { type: string }
+              importance: { type: string }
+              status: { type: string }
+              created_at: { type: string }
+        activity:
+          type: array
+          items:
+            type: object
+            required: [id, action, entity_type, entity_id, metadata, created_at]
+            properties:
+              id: { type: string }
+              action: { type: string }
+              entity_type: { type: string }
+              entity_id: { type: string, nullable: true }
+              metadata: { type: object, additionalProperties: true }
+              created_at: { type: string }
+        report:
+          type: object
+          required: [title, highlights]
+          properties:
+            title: { type: string }
+            highlights:
+              type: array
+              items: { type: string }
+    RadarSearchResponse:
+      type: object
+      required: [query, results]
+      properties:
+        query: { type: string }
+        results:
+          type: array
+          items:
+            type: object
+            required: [type, id, title, detail]
+            properties:
+              type: { type: string }
+              id: { type: string }
+              title: { type: string }
+              detail: { type: string }
+              created_at: { type: string }
+              importance: { type: string }
+    RadarAlertPreferences:
+      type: object
+      required: [enabled, minimum_importance, minimum_relevance, minimum_confidence, internal_enabled, channels, updated_at]
+      properties:
+        enabled: { type: boolean }
+        minimum_importance: { type: string, enum: [low, medium, high, critical] }
+        minimum_relevance: { type: number, minimum: 0, maximum: 100 }
+        minimum_confidence: { type: number, minimum: 0, maximum: 100 }
+        internal_enabled: { type: boolean }
+        channels:
+          type: array
+          items: { type: string }
+        updated_at: { type: string }
+    RadarAlertPreferencesUpdate:
+      type: object
+      properties:
+        enabled: { type: boolean }
+        minimum_importance: { type: string, enum: [low, medium, high, critical] }
+        minimum_relevance: { type: number, minimum: 0, maximum: 100 }
+        minimum_confidence: { type: number, minimum: 0, maximum: 100 }
+        internal_enabled: { type: boolean }
 

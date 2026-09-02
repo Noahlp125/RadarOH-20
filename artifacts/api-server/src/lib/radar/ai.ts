@@ -4,6 +4,8 @@ import {
   radarAiAlerts,
   radarAiAnalyses,
   radarAiFindings,
+  radarActivityLog,
+  radarAlertPreferences,
   radarChangeEvents,
   radarCompetitors,
   radarMonitorEvidence,
@@ -325,6 +327,17 @@ async function persistAnalysis(
   evidence: Awaited<ReturnType<typeof loadUnanalyzedEvidence>>,
 ) {
   return withRadarTransaction(async (tx) => {
+    const [preferences] = await tx
+      .select()
+      .from(radarAlertPreferences)
+      .where(eq(radarAlertPreferences.workspaceId, RADAR_WORKSPACE_ID))
+      .limit(1);
+    const alertEnabled = preferences?.enabled ?? true;
+    const internalEnabled = preferences?.internalEnabled ?? true;
+    const minimumRelevance = preferences?.minimumRelevance ?? 70;
+    const minimumConfidence = preferences?.minimumConfidence ?? 60;
+    const importanceRank: Record<string, number> = { low: 0, medium: 1, high: 2, critical: 3 };
+    const minimumImportanceRank = importanceRank[preferences?.minimumImportance ?? "high"] ?? 2;
     const evidenceMap = new Map(evidence.map((item) => [item.change_event_id, item]));
     const findingRows = [];
     for (const finding of findings) {
@@ -355,9 +368,11 @@ async function persistAnalysis(
       findingRows.push(row);
       if (
         finding.alert &&
-        ["high", "critical"].includes(finding.importance) &&
-        finding.relevance >= 70 &&
-        confidence >= 60
+        alertEnabled &&
+        internalEnabled &&
+        (importanceRank[finding.importance] ?? 0) >= minimumImportanceRank &&
+        finding.relevance >= minimumRelevance &&
+        confidence >= minimumConfidence
       ) {
         const [event] = await tx
           .select()
@@ -387,6 +402,14 @@ async function persistAnalysis(
       })
       .where(eq(radarAiAnalyses.id, analysisId))
       .returning();
+    await tx.insert(radarActivityLog).values({
+      id: randomUUID(),
+      workspaceId: RADAR_WORKSPACE_ID,
+      action: "completed",
+      entityType: "ai_analysis",
+      entityId: analysisId,
+      metadata: { findings: findingRows.length, evidence: evidence.length },
+    });
     return mapAnalysis(analysis, findingRows);
   });
 }

@@ -484,6 +484,204 @@ export interface RadarAiStatus {
   recent_alerts: RadarAiAlert[];
 }
 
+export interface RadarExecutiveFilterOption {
+  id: string;
+  name: string;
+}
+
+export type RadarExecutiveDashboardPeriod = {
+  from: string;
+  to: string;
+};
+
+export type RadarExecutiveDashboardFilters = {
+  competitors: RadarExecutiveFilterOption[];
+  sources: RadarExecutiveFilterOption[];
+  priorities: string[];
+  event_types: string[];
+};
+
+export type RadarExecutiveDashboardKpis = {
+  total_events: number;
+  high_priority_events: number;
+  active_competitors: number;
+  source_health_percent: number;
+  average_relevance: number;
+  unread_alerts: number;
+};
+
+export type RadarExecutiveDashboardByImportanceItem = {
+  label: string;
+  count: number;
+};
+
+export type RadarExecutiveDashboardByTypeItem = {
+  type: string;
+  count: number;
+};
+
+export type RadarExecutiveDashboardTimelineItem = {
+  date: string;
+  events: number;
+  high_priority: number;
+  competitors: number;
+};
+
+export type RadarExecutiveDashboardTrendsItem = {
+  name: string;
+  direction: string;
+  current: number;
+  previous: number;
+  delta: number;
+  confidence: number;
+  description: string;
+};
+
+export type RadarExecutiveDashboardCompetitorCompareItem = {
+  competitor_id: string;
+  name: string;
+  activity: number;
+  relevance: number;
+  changes: number;
+  high_priority: number;
+  importance: number;
+  priority: string;
+  last_event_at: string | null;
+};
+
+export type RadarExecutiveDashboardRadarPointsItem = {
+  competitor_id: string;
+  name: string;
+  activity: number;
+  relevance: number;
+  changes: number;
+  importance: number;
+  priority: string;
+};
+
+export type RadarExecutiveDashboardFindingsItem = {
+  id: string;
+  title: string;
+  summary: string;
+  importance: string;
+  relevance: number;
+  confidence: number;
+  event_type: string;
+  opportunity: string;
+  risk: string;
+  trend: string;
+  evidence_ids: string[];
+};
+
+export type RadarExecutiveDashboardAlertsItem = {
+  id: string;
+  title: string;
+  importance: string;
+  status: string;
+  created_at: string;
+};
+
+export type RadarExecutiveDashboardActivityItemMetadata = { [key: string]: unknown };
+
+export type RadarExecutiveDashboardActivityItem = {
+  id: string;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  metadata: RadarExecutiveDashboardActivityItemMetadata;
+  created_at: string;
+};
+
+export type RadarExecutiveDashboardReport = {
+  title: string;
+  highlights: string[];
+};
+
+export interface RadarExecutiveDashboard {
+  generated_at: string;
+  period: RadarExecutiveDashboardPeriod;
+  filters: RadarExecutiveDashboardFilters;
+  kpis: RadarExecutiveDashboardKpis;
+  by_importance: RadarExecutiveDashboardByImportanceItem[];
+  by_type: RadarExecutiveDashboardByTypeItem[];
+  timeline: RadarExecutiveDashboardTimelineItem[];
+  trends: RadarExecutiveDashboardTrendsItem[];
+  competitor_compare: RadarExecutiveDashboardCompetitorCompareItem[];
+  radar_points: RadarExecutiveDashboardRadarPointsItem[];
+  findings: RadarExecutiveDashboardFindingsItem[];
+  alerts: RadarExecutiveDashboardAlertsItem[];
+  activity: RadarExecutiveDashboardActivityItem[];
+  report: RadarExecutiveDashboardReport;
+}
+
+export type RadarSearchResponseResultsItem = {
+  type: string;
+  id: string;
+  title: string;
+  detail: string;
+  created_at?: string;
+  importance?: string;
+};
+
+export interface RadarSearchResponse {
+  query: string;
+  results: RadarSearchResponseResultsItem[];
+}
+
+export type RadarAlertPreferencesMinimumImportance = typeof RadarAlertPreferencesMinimumImportance[keyof typeof RadarAlertPreferencesMinimumImportance];
+
+
+export const RadarAlertPreferencesMinimumImportance = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export interface RadarAlertPreferences {
+  enabled: boolean;
+  minimum_importance: RadarAlertPreferencesMinimumImportance;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  minimum_relevance: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  minimum_confidence: number;
+  internal_enabled: boolean;
+  channels: string[];
+  updated_at: string;
+}
+
+export type RadarAlertPreferencesUpdateMinimumImportance = typeof RadarAlertPreferencesUpdateMinimumImportance[keyof typeof RadarAlertPreferencesUpdateMinimumImportance];
+
+
+export const RadarAlertPreferencesUpdateMinimumImportance = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export interface RadarAlertPreferencesUpdate {
+  enabled?: boolean;
+  minimum_importance?: RadarAlertPreferencesUpdateMinimumImportance;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  minimum_relevance?: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  minimum_confidence?: number;
+  internal_enabled?: boolean;
+}
+
 /**
  * Request validation failed
  */
@@ -507,4 +705,52 @@ competitor_id?: string;
  */
 limit?: number;
 };
+
+export type GetRadarExecutiveDashboardParams = {
+competitor_id?: string;
+source_id?: string;
+from?: string;
+to?: string;
+priority?: GetRadarExecutiveDashboardPriority;
+event_type?: string;
+q?: string;
+};
+
+export type GetRadarExecutiveDashboardPriority = typeof GetRadarExecutiveDashboardPriority[keyof typeof GetRadarExecutiveDashboardPriority];
+
+
+export const GetRadarExecutiveDashboardPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export type SearchRadarParams = {
+/**
+ * @minLength 2
+ * @maxLength 160
+ */
+q: string;
+};
+
+export type ExportRadarExecutiveReportParams = {
+competitor_id?: string;
+source_id?: string;
+from?: string;
+to?: string;
+priority?: ExportRadarExecutiveReportPriority;
+event_type?: string;
+q?: string;
+};
+
+export type ExportRadarExecutiveReportPriority = typeof ExportRadarExecutiveReportPriority[keyof typeof ExportRadarExecutiveReportPriority];
+
+
+export const ExportRadarExecutiveReportPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
 
