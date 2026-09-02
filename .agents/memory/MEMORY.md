@@ -2,3 +2,4 @@
 - [RadarOH history preservation](radaroh-monitor-history-preservation.md) — snapshot saves never implicitly delete monitored entities; destructive removal is explicit.
 - [OpenAPI date query validation](openapi-date-query-validation.md) — validate Express query strings at the route boundary when generated Zod expects runtime Date objects.
 - [RadarOH effective RLS](radaroh-effective-rls.md) — managed DB owners may bypass RLS; Radar transactions must reduce privileges to a dedicated NOBYPASSRLS role.
+- [RadarOH predictive claims](radaroh-predictive-claims.md) — scores and leading signals stay deterministic and evidence-backed until labeled outcomes support calibrated prediction.

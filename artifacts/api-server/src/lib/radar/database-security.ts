@@ -7,7 +7,6 @@ export async function initializeRadarDatabaseSecurity(): Promise<void> {
       IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'radar_app') THEN
         CREATE ROLE radar_app NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
       END IF;
-      ALTER ROLE radar_app NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
     END
     $$;
 

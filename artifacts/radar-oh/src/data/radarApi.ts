@@ -29,6 +29,8 @@ import {
   type ExportRadarExecutiveReportParams,
   type RadarAlertPreferences,
   type RadarAlertPreferencesUpdate,
+  type GetRadarIntelligenceParams,
+  type RadarIntelligence,
 } from "@workspace/api-client-react";
 
 export type RadarLocalState = Omit<RadarState, "workspaceId">;
@@ -122,4 +124,9 @@ export async function fetchRadarAlertPreferences(): Promise<RadarAlertPreference
 
 export async function saveRadarAlertPreferences(data: RadarAlertPreferencesUpdate): Promise<RadarAlertPreferences> {
   return updateRadarAlertPreferences(data);
+}
+
+export async function fetchRadarIntelligence(params?: GetRadarIntelligenceParams): Promise<RadarIntelligence> {
+  const { getRadarIntelligence } = await import("@workspace/api-client-react");
+  return getRadarIntelligence(params);
 }

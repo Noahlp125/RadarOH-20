@@ -22,6 +22,7 @@ import type {
 import type {
   ExportRadarExecutiveReportParams,
   GetRadarExecutiveDashboardParams,
+  GetRadarIntelligenceParams,
   GetRadarMonitorHistoryParams,
   HealthStatus,
   NotFoundResponse,
@@ -40,6 +41,7 @@ import type {
   RadarExecutiveDashboard,
   RadarImportRequest,
   RadarImportResult,
+  RadarIntelligence,
   RadarKeyword,
   RadarKeywordInput,
   RadarKeywordUpdate,
@@ -1701,6 +1703,90 @@ export function useGetRadarExecutiveDashboard<TData = Awaited<ReturnType<typeof 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetRadarExecutiveDashboardQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetRadarIntelligenceUrl = (params?: GetRadarIntelligenceParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/radar/intelligence?${stringifiedParams}` : `/api/radar/intelligence`
+}
+
+/**
+ * @summary Read evidence-backed scores, trends, recommendations and quality metrics
+ */
+export const getRadarIntelligence = async (params?: GetRadarIntelligenceParams, options?: Parameters<typeof customFetch>[1]): Promise<RadarIntelligence> => {
+
+  return customFetch<RadarIntelligence>(getGetRadarIntelligenceUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRadarIntelligenceQueryKey = (params?: GetRadarIntelligenceParams,) => {
+    return [
+    `/api/radar/intelligence`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRadarIntelligenceQueryOptions = <TData = Awaited<ReturnType<typeof getRadarIntelligence>>, TError = ErrorType<ValidationErrorResponse>>(params?: GetRadarIntelligenceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarIntelligence>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRadarIntelligenceQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRadarIntelligence>>> = ({ signal }) => getRadarIntelligence(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRadarIntelligence>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRadarIntelligenceQueryResult = NonNullable<Awaited<ReturnType<typeof getRadarIntelligence>>>
+export type GetRadarIntelligenceQueryError = ErrorType<ValidationErrorResponse>
+
+
+/**
+ * @summary Read evidence-backed scores, trends, recommendations and quality metrics
+ */
+
+export function useGetRadarIntelligence<TData = Awaited<ReturnType<typeof getRadarIntelligence>>, TError = ErrorType<ValidationErrorResponse>>(
+ params?: GetRadarIntelligenceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRadarIntelligence>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRadarIntelligenceQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

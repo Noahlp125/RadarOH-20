@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import {
   GetRadarAlertPreferencesResponse,
   GetRadarExecutiveDashboardResponse,
+  GetRadarIntelligenceResponse,
   SearchRadarQueryParams,
   SearchRadarResponse,
   UpdateRadarAlertPreferencesBody,
@@ -16,6 +17,7 @@ import {
   searchRadar,
   updateAlertPreferences,
 } from "../lib/radar/dashboard";
+import { getRadarIntelligence, intelligenceQuerySchema } from "../lib/radar/intelligence";
 
 const router: IRouter = Router();
 
@@ -28,6 +30,17 @@ router.get("/radar/executive", async (req, res): Promise<void> => {
   const dashboard = await getExecutiveDashboard(filters.data);
   GetRadarExecutiveDashboardResponse.parse(dashboard);
   res.json(dashboard);
+});
+
+router.get("/radar/intelligence", async (req, res): Promise<void> => {
+  const query = intelligenceQuerySchema.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const intelligence = await getRadarIntelligence(query.data);
+  GetRadarIntelligenceResponse.parse(intelligence);
+  res.json(intelligence);
 });
 
 router.get("/radar/search", async (req, res): Promise<void> => {

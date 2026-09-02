@@ -420,6 +420,7 @@ export type RadarAiAnalysisAttemptErrorsItem = {
   attempt: number;
   error: string;
 };
+
 export interface RadarAiAnalysis {
   id: string;
   trigger: RadarAiAnalysisTrigger;
@@ -691,6 +692,156 @@ export interface RadarAlertPreferencesUpdate {
   internal_enabled?: boolean;
 }
 
+export type RadarIntelligencePeriod = {
+  from: string;
+  to: string;
+  days: number;
+};
+
+export type RadarIntelligenceMethodology = {
+  label: string;
+  limitations: string[];
+};
+
+export type RadarIntelligenceReport = {
+  title: string;
+  summary: string;
+  generated_at: string;
+};
+
+export type RadarCompetitorScorecardBreakdown = {
+  activity: number;
+  momentum: number;
+  importance: number;
+  relevance: number;
+  recency: number;
+};
+
+export interface RadarCompetitorScorecard {
+  competitor_id: string;
+  name: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  score: number;
+  band: string;
+  /** @minimum 0 */
+  signal_count: number;
+  last_event_at: string | null;
+  breakdown: RadarCompetitorScorecardBreakdown;
+}
+
+export type RadarIntelligenceTrendDirection = typeof RadarIntelligenceTrendDirection[keyof typeof RadarIntelligenceTrendDirection];
+
+
+export const RadarIntelligenceTrendDirection = {
+  accelerating: 'accelerating',
+  growing: 'growing',
+  stable: 'stable',
+  declining: 'declining',
+  emerging: 'emerging',
+} as const;
+
+export interface RadarIntelligenceTrend {
+  key: string;
+  label: string;
+  current_count: number;
+  previous_count: number;
+  delta_percent: number;
+  direction: RadarIntelligenceTrendDirection;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  confidence: number;
+  basis: string;
+  evidence_event_ids: string[];
+}
+
+export type RadarRecommendationPriority = typeof RadarRecommendationPriority[keyof typeof RadarRecommendationPriority];
+
+
+export const RadarRecommendationPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export type RadarRecommendationStatus = typeof RadarRecommendationStatus[keyof typeof RadarRecommendationStatus];
+
+
+export const RadarRecommendationStatus = {
+  review_required: 'review_required',
+} as const;
+
+export interface RadarRecommendation {
+  id: string;
+  title: string;
+  priority: RadarRecommendationPriority;
+  action: string;
+  reason: string;
+  competitor_id?: string | null;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  confidence: number;
+  evidence_event_ids: string[];
+  status: RadarRecommendationStatus;
+}
+
+export interface RadarOpportunity {
+  title: string;
+  description: string;
+  competitor_id?: string | null;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  score: number;
+  evidence_event_ids: string[];
+}
+
+export type RadarQualityMetricsMonitoring = {
+  runs: number;
+  success_rate: number;
+  average_latency_ms: number;
+  sources_with_errors: number;
+};
+
+export type RadarQualityMetricsAi = {
+  analyses: number;
+  completed: number;
+  findings: number;
+  grounded_findings: number;
+};
+
+export type RadarQualityMetricsAlerts = {
+  total: number;
+  unread: number;
+  read_rate: number;
+};
+
+export interface RadarQualityMetrics {
+  monitoring: RadarQualityMetricsMonitoring;
+  ai: RadarQualityMetricsAi;
+  alerts: RadarQualityMetricsAlerts;
+}
+
+export interface RadarIntelligence {
+  generated_at: string;
+  period: RadarIntelligencePeriod;
+  methodology: RadarIntelligenceMethodology;
+  scorecards: RadarCompetitorScorecard[];
+  trends: RadarIntelligenceTrend[];
+  recommendations: RadarRecommendation[];
+  opportunities: RadarOpportunity[];
+  quality: RadarQualityMetrics;
+  report: RadarIntelligenceReport;
+}
+
 /**
  * Request validation failed
  */
@@ -734,6 +885,14 @@ export const GetRadarExecutiveDashboardPriority = {
   high: 'high',
   critical: 'critical',
 } as const;
+
+export type GetRadarIntelligenceParams = {
+/**
+ * @minimum 30
+ * @maximum 366
+ */
+days?: number;
+};
 
 export type SearchRadarParams = {
 /**

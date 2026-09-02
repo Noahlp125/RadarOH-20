@@ -442,6 +442,20 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/RadarExecutiveDashboard" }
         "400": { $ref: "#/components/responses/ValidationError" }
+  /radar/intelligence:
+    get:
+      operationId: getRadarIntelligence
+      tags: [radar-analytics]
+      summary: Read evidence-backed scores, trends, recommendations and quality metrics
+      parameters:
+        - { name: days, in: query, required: false, schema: { type: number, minimum: 30, maximum: 366, default: 90 } }
+      responses:
+        "200":
+          description: Advanced intelligence derived from persisted RadarOH evidence
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RadarIntelligence" }
+        "400": { $ref: "#/components/responses/ValidationError" }
   /radar/search:
     get:
       operationId: searchRadar
@@ -1134,3 +1148,130 @@ components:
         minimum_relevance: { type: number, minimum: 0, maximum: 100 }
         minimum_confidence: { type: number, minimum: 0, maximum: 100 }
         internal_enabled: { type: boolean }
+    RadarIntelligence:
+      type: object
+      required: [generated_at, period, methodology, scorecards, trends, recommendations, opportunities, quality, report]
+      properties:
+        generated_at: { type: string }
+        period:
+          type: object
+          required: [from, to, days]
+          properties:
+            from: { type: string }
+            to: { type: string }
+            days: { type: number }
+        methodology:
+          type: object
+          required: [label, limitations]
+          properties:
+            label: { type: string }
+            limitations:
+              type: array
+              items: { type: string }
+        scorecards:
+          type: array
+          items: { $ref: "#/components/schemas/RadarCompetitorScorecard" }
+        trends:
+          type: array
+          items: { $ref: "#/components/schemas/RadarIntelligenceTrend" }
+        recommendations:
+          type: array
+          items: { $ref: "#/components/schemas/RadarRecommendation" }
+        opportunities:
+          type: array
+          items: { $ref: "#/components/schemas/RadarOpportunity" }
+        quality: { $ref: "#/components/schemas/RadarQualityMetrics" }
+        report:
+          type: object
+          required: [title, summary, generated_at]
+          properties:
+            title: { type: string }
+            summary: { type: string }
+            generated_at: { type: string }
+    RadarCompetitorScorecard:
+      type: object
+      required: [competitor_id, name, score, band, breakdown, signal_count, last_event_at]
+      properties:
+        competitor_id: { type: string }
+        name: { type: string }
+        score: { type: number, minimum: 0, maximum: 100 }
+        band: { type: string }
+        signal_count: { type: number, minimum: 0 }
+        last_event_at: { type: string, nullable: true }
+        breakdown:
+          type: object
+          required: [activity, momentum, importance, relevance, recency]
+          properties:
+            activity: { type: number }
+            momentum: { type: number }
+            importance: { type: number }
+            relevance: { type: number }
+            recency: { type: number }
+    RadarIntelligenceTrend:
+      type: object
+      required: [key, label, current_count, previous_count, delta_percent, direction, confidence, basis, evidence_event_ids]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        current_count: { type: number }
+        previous_count: { type: number }
+        delta_percent: { type: number }
+        direction: { type: string, enum: [accelerating, growing, stable, declining, emerging] }
+        confidence: { type: number, minimum: 0, maximum: 100 }
+        basis: { type: string }
+        evidence_event_ids:
+          type: array
+          items: { type: string }
+    RadarRecommendation:
+      type: object
+      required: [id, title, priority, action, reason, confidence, evidence_event_ids, status]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        priority: { type: string, enum: [low, medium, high, critical] }
+        action: { type: string }
+        reason: { type: string }
+        competitor_id: { type: string, nullable: true }
+        confidence: { type: number, minimum: 0, maximum: 100 }
+        evidence_event_ids:
+          type: array
+          items: { type: string }
+        status: { type: string, enum: [review_required] }
+    RadarOpportunity:
+      type: object
+      required: [title, description, score, evidence_event_ids]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        competitor_id: { type: string, nullable: true }
+        score: { type: number, minimum: 0, maximum: 100 }
+        evidence_event_ids:
+          type: array
+          items: { type: string }
+    RadarQualityMetrics:
+      type: object
+      required: [monitoring, ai, alerts]
+      properties:
+        monitoring:
+          type: object
+          required: [runs, success_rate, average_latency_ms, sources_with_errors]
+          properties:
+            runs: { type: number }
+            success_rate: { type: number }
+            average_latency_ms: { type: number }
+            sources_with_errors: { type: number }
+        ai:
+          type: object
+          required: [analyses, completed, findings, grounded_findings]
+          properties:
+            analyses: { type: number }
+            completed: { type: number }
+            findings: { type: number }
+            grounded_findings: { type: number }
+        alerts:
+          type: object
+          required: [total, unread, read_rate]
+          properties:
+            total: { type: number }
+            unread: { type: number }
+            read_rate: { type: number }

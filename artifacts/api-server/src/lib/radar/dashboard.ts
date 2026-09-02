@@ -186,8 +186,15 @@ export async function getAlertPreferences() {
   return withRadarTransaction(async (tx) => {
     const [existing] = await tx.select().from(radarAlertPreferences).where(eq(radarAlertPreferences.workspaceId, RADAR_WORKSPACE_ID)).limit(1);
     if (existing) return mapPreferences(existing);
-    const [created] = await tx.insert(radarAlertPreferences).values({ workspaceId: RADAR_WORKSPACE_ID }).returning();
-    return mapPreferences(created);
+    return {
+      enabled: true,
+      minimum_importance: "high",
+      minimum_relevance: 70,
+      minimum_confidence: 60,
+      internal_enabled: true,
+      channels: ["internal"],
+      updated_at: new Date(0).toISOString(),
+    };
   });
 }
 

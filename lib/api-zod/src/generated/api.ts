@@ -23,6 +23,7 @@ export const HealthCheckResponse = zod.object({
 export const getRadarStateResponseSourcesItemConsecutiveFailuresMin = 0;
 
 
+
 export const GetRadarStateResponse = zod.object({
   "workspaceId": zod.string(),
   "sources": zod.array(zod.object({
@@ -138,6 +139,7 @@ export const ReplaceRadarStateBody = zod.object({
 })
 
 export const replaceRadarStateResponseSourcesItemConsecutiveFailuresMin = 0;
+
 
 
 export const ReplaceRadarStateResponse = zod.object({
@@ -261,6 +263,7 @@ export const ImportRadarDataBody = zod.object({
 export const importRadarDataResponseStateSourcesItemConsecutiveFailuresMin = 0;
 
 
+
 export const ImportRadarDataResponse = zod.object({
   "importId": zod.string(),
   "state": zod.object({
@@ -347,6 +350,7 @@ export const CreateRadarSourceBody = zod.object({
 export const createRadarSourceResponseConsecutiveFailuresMin = 0;
 
 
+
 export const CreateRadarSourceResponse = zod.object({
   "id": zod.string(),
   "termino": zod.string(),
@@ -370,6 +374,7 @@ export const CreateRadarSourceResponse = zod.object({
  */
 
 
+
 export const UpdateRadarSourceParams = zod.object({
   "id": zod.coerce.string().min(1)
 })
@@ -386,6 +391,7 @@ export const UpdateRadarSourceBody = zod.object({
 })
 
 export const updateRadarSourceResponseConsecutiveFailuresMin = 0;
+
 
 
 export const UpdateRadarSourceResponse = zod.object({
@@ -409,6 +415,7 @@ export const UpdateRadarSourceResponse = zod.object({
 /**
  * @summary Delete a source
  */
+
 
 
 export const DeleteRadarSourceParams = zod.object({
@@ -457,6 +464,7 @@ export const CreateRadarCompetitorResponse = zod.object({
  */
 
 
+
 export const UpdateRadarCompetitorParams = zod.object({
   "id": zod.coerce.string().min(1)
 })
@@ -496,6 +504,7 @@ export const UpdateRadarCompetitorResponse = zod.object({
  */
 
 
+
 export const DeleteRadarCompetitorParams = zod.object({
   "id": zod.coerce.string().min(1)
 })
@@ -528,6 +537,7 @@ export const CreateRadarKeywordResponse = zod.object({
  */
 
 
+
 export const UpdateRadarKeywordParams = zod.object({
   "id": zod.coerce.string().min(1)
 })
@@ -551,6 +561,7 @@ export const UpdateRadarKeywordResponse = zod.object({
 /**
  * @summary Delete a keyword
  */
+
 
 
 export const DeleteRadarKeywordParams = zod.object({
@@ -578,6 +589,7 @@ export const getRadarMonitorStatusResponseRecentRunsItemAttemptsMin = 0;
 export const getRadarMonitorStatusResponseRecentRunsItemItemCountMin = 0;
 
 export const getRadarMonitorStatusResponseRecentRunsItemChangeCountMin = 0;
+
 
 
 export const GetRadarMonitorStatusResponse = zod.object({
@@ -649,6 +661,7 @@ export const runRadarMonitorResponseRunsItemItemCountMin = 0;
 export const runRadarMonitorResponseRunsItemChangeCountMin = 0;
 
 
+
 export const RunRadarMonitorResponse = zod.object({
   "runs": zod.array(zod.object({
   "id": zod.string(),
@@ -690,6 +703,7 @@ export const RunRadarMonitorResponse = zod.object({
 export const getRadarMonitorHistoryQueryLimitMax = 100;
 
 
+
 export const GetRadarMonitorHistoryQueryParams = zod.object({
   "competitor_id": zod.coerce.string().optional(),
   "limit": zod.coerce.number().min(1).max(getRadarMonitorHistoryQueryLimitMax).optional()
@@ -722,6 +736,8 @@ export const getRadarAiStatusResponseLatestAnalysisOneSourceEvidenceCountMin = 0
 export const getRadarAiStatusResponseLatestAnalysisOneEventCountMin = 0;
 
 export const getRadarAiStatusResponseLatestAnalysisOneAttemptCountMin = 0;
+
+
 export const getRadarAiStatusResponseLatestAnalysisOneFindingsItemRelevanceMin = 0;
 export const getRadarAiStatusResponseLatestAnalysisOneFindingsItemRelevanceMax = 100;
 
@@ -729,6 +745,7 @@ export const getRadarAiStatusResponseLatestAnalysisOneFindingsItemConfidenceMin 
 export const getRadarAiStatusResponseLatestAnalysisOneFindingsItemConfidenceMax = 100;
 
 export const getRadarAiStatusResponseUnreadAlertsMin = 0;
+
 
 
 export const GetRadarAiStatusResponse = zod.object({
@@ -789,6 +806,7 @@ export const GetRadarAiStatusResponse = zod.object({
 export const runRadarAiAnalysisBodyLimitMax = 50;
 
 
+
 export const RunRadarAiAnalysisBody = zod.object({
   "limit": zod.number().min(1).max(runRadarAiAnalysisBodyLimitMax).optional(),
   "source_id": zod.string().optional()
@@ -799,11 +817,14 @@ export const runRadarAiAnalysisResponseOneSourceEvidenceCountMin = 0;
 export const runRadarAiAnalysisResponseOneEventCountMin = 0;
 
 export const runRadarAiAnalysisResponseOneAttemptCountMin = 0;
+
+
 export const runRadarAiAnalysisResponseOneFindingsItemRelevanceMin = 0;
 export const runRadarAiAnalysisResponseOneFindingsItemRelevanceMax = 100;
 
 export const runRadarAiAnalysisResponseOneFindingsItemConfidenceMin = 0;
 export const runRadarAiAnalysisResponseOneFindingsItemConfidenceMax = 100;
+
 
 
 export const RunRadarAiAnalysisResponse = zod.object({
@@ -851,11 +872,14 @@ export const listRadarAiAnalysesResponseSourceEvidenceCountMin = 0;
 export const listRadarAiAnalysesResponseEventCountMin = 0;
 
 export const listRadarAiAnalysesResponseAttemptCountMin = 0;
+
+
 export const listRadarAiAnalysesResponseFindingsItemRelevanceMin = 0;
 export const listRadarAiAnalysesResponseFindingsItemRelevanceMax = 100;
 
 export const listRadarAiAnalysesResponseFindingsItemConfidenceMin = 0;
 export const listRadarAiAnalysesResponseFindingsItemConfidenceMax = 100;
+
 
 
 export const ListRadarAiAnalysesResponseItem = zod.object({
@@ -917,6 +941,7 @@ export const ListRadarAiAlertsResponse = zod.array(ListRadarAiAlertsResponseItem
 /**
  * @summary Mark an AI alert as read or unread
  */
+
 
 
 export const UpdateRadarAiAlertParams = zod.object({
@@ -1059,10 +1084,122 @@ export const GetRadarExecutiveDashboardResponse = zod.object({
 
 
 /**
+ * @summary Read evidence-backed scores, trends, recommendations and quality metrics
+ */
+export const getRadarIntelligenceQueryDaysDefault = 90;
+export const getRadarIntelligenceQueryDaysMin = 30;
+export const getRadarIntelligenceQueryDaysMax = 366;
+
+
+
+export const GetRadarIntelligenceQueryParams = zod.object({
+  "days": zod.coerce.number().min(getRadarIntelligenceQueryDaysMin).max(getRadarIntelligenceQueryDaysMax).default(getRadarIntelligenceQueryDaysDefault)
+})
+
+export const getRadarIntelligenceResponseScorecardsItemScoreMin = 0;
+export const getRadarIntelligenceResponseScorecardsItemScoreMax = 100;
+
+export const getRadarIntelligenceResponseScorecardsItemSignalCountMin = 0;
+
+export const getRadarIntelligenceResponseTrendsItemConfidenceMin = 0;
+export const getRadarIntelligenceResponseTrendsItemConfidenceMax = 100;
+
+export const getRadarIntelligenceResponseRecommendationsItemConfidenceMin = 0;
+export const getRadarIntelligenceResponseRecommendationsItemConfidenceMax = 100;
+
+export const getRadarIntelligenceResponseOpportunitiesItemScoreMin = 0;
+export const getRadarIntelligenceResponseOpportunitiesItemScoreMax = 100;
+
+
+
+export const GetRadarIntelligenceResponse = zod.object({
+  "generated_at": zod.string(),
+  "period": zod.object({
+  "from": zod.string(),
+  "to": zod.string(),
+  "days": zod.number()
+}),
+  "methodology": zod.object({
+  "label": zod.string(),
+  "limitations": zod.array(zod.string())
+}),
+  "scorecards": zod.array(zod.object({
+  "competitor_id": zod.string(),
+  "name": zod.string(),
+  "score": zod.number().min(getRadarIntelligenceResponseScorecardsItemScoreMin).max(getRadarIntelligenceResponseScorecardsItemScoreMax),
+  "band": zod.string(),
+  "signal_count": zod.number().min(getRadarIntelligenceResponseScorecardsItemSignalCountMin),
+  "last_event_at": zod.string().nullable(),
+  "breakdown": zod.object({
+  "activity": zod.number(),
+  "momentum": zod.number(),
+  "importance": zod.number(),
+  "relevance": zod.number(),
+  "recency": zod.number()
+})
+})),
+  "trends": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "current_count": zod.number(),
+  "previous_count": zod.number(),
+  "delta_percent": zod.number(),
+  "direction": zod.enum(['accelerating', 'growing', 'stable', 'declining', 'emerging']),
+  "confidence": zod.number().min(getRadarIntelligenceResponseTrendsItemConfidenceMin).max(getRadarIntelligenceResponseTrendsItemConfidenceMax),
+  "basis": zod.string(),
+  "evidence_event_ids": zod.array(zod.string())
+})),
+  "recommendations": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']),
+  "action": zod.string(),
+  "reason": zod.string(),
+  "competitor_id": zod.string().nullish(),
+  "confidence": zod.number().min(getRadarIntelligenceResponseRecommendationsItemConfidenceMin).max(getRadarIntelligenceResponseRecommendationsItemConfidenceMax),
+  "evidence_event_ids": zod.array(zod.string()),
+  "status": zod.enum(['review_required'])
+})),
+  "opportunities": zod.array(zod.object({
+  "title": zod.string(),
+  "description": zod.string(),
+  "competitor_id": zod.string().nullish(),
+  "score": zod.number().min(getRadarIntelligenceResponseOpportunitiesItemScoreMin).max(getRadarIntelligenceResponseOpportunitiesItemScoreMax),
+  "evidence_event_ids": zod.array(zod.string())
+})),
+  "quality": zod.object({
+  "monitoring": zod.object({
+  "runs": zod.number(),
+  "success_rate": zod.number(),
+  "average_latency_ms": zod.number(),
+  "sources_with_errors": zod.number()
+}),
+  "ai": zod.object({
+  "analyses": zod.number(),
+  "completed": zod.number(),
+  "findings": zod.number(),
+  "grounded_findings": zod.number()
+}),
+  "alerts": zod.object({
+  "total": zod.number(),
+  "unread": zod.number(),
+  "read_rate": zod.number()
+})
+}),
+  "report": zod.object({
+  "title": zod.string(),
+  "summary": zod.string(),
+  "generated_at": zod.string()
+})
+})
+
+
+/**
  * @summary Search across RadarOH entities and evidence
  */
 export const searchRadarQueryQMin = 2;
 export const searchRadarQueryQMax = 160;
+
 
 
 export const SearchRadarQueryParams = zod.object({
@@ -1108,6 +1245,7 @@ export const getRadarAlertPreferencesResponseMinimumConfidenceMin = 0;
 export const getRadarAlertPreferencesResponseMinimumConfidenceMax = 100;
 
 
+
 export const GetRadarAlertPreferencesResponse = zod.object({
   "enabled": zod.boolean(),
   "minimum_importance": zod.enum(['low', 'medium', 'high', 'critical']),
@@ -1117,8 +1255,6 @@ export const GetRadarAlertPreferencesResponse = zod.object({
   "channels": zod.array(zod.string()),
   "updated_at": zod.string()
 })
-
-
 /**
  * @summary Update configurable alert thresholds
  */
@@ -1127,6 +1263,7 @@ export const updateRadarAlertPreferencesBodyMinimumRelevanceMax = 100;
 
 export const updateRadarAlertPreferencesBodyMinimumConfidenceMin = 0;
 export const updateRadarAlertPreferencesBodyMinimumConfidenceMax = 100;
+
 
 
 export const UpdateRadarAlertPreferencesBody = zod.object({
@@ -1142,6 +1279,7 @@ export const updateRadarAlertPreferencesResponseMinimumRelevanceMax = 100;
 
 export const updateRadarAlertPreferencesResponseMinimumConfidenceMin = 0;
 export const updateRadarAlertPreferencesResponseMinimumConfidenceMax = 100;
+
 
 
 export const UpdateRadarAlertPreferencesResponse = zod.object({
