@@ -33,6 +33,137 @@ if (!configuredWorkspaceId) {
 
 export const RADAR_WORKSPACE_ID: string = configuredWorkspaceId;
 
+function googleNewsRssUrl(term: string) {
+  return `https://news.google.com/rss/search?q=${encodeURIComponent(term)}&hl=es&gl=ES&ceid=ES:es`;
+}
+
+function publicWebsiteUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(withProtocol);
+    if (!["http:", "https:"].includes(url.protocol)) return "";
+    url.pathname = url.pathname === "/" ? "/" : `${url.pathname.replace(/\/+$/, "")}/`;
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Turns the initial research plan into executable public monitoring sources.
+ * Existing user-defined endpoints are left untouched.
+ */
+export async function ensureRadarMonitoringSources() {
+  return withRadarTransaction(async (tx) => {
+    const now = new Date();
+    const sources = await tx
+      .select()
+      .from(radarSources)
+      .where(eq(radarSources.workspaceId, RADAR_WORKSPACE_ID));
+    const competitors = await tx
+      .select()
+      .from(radarCompetitors)
+      .where(eq(radarCompetitors.workspaceId, RADAR_WORKSPACE_ID));
+    let activated = 0;
+    let added = 0;
+
+    for (const source of sources) {
+      if (source.connector !== "manual" || source.endpointUrl.trim()) continue;
+      await tx
+        .update(radarSources)
+        .set({
+          connector: "rss",
+          endpointUrl: googleNewsRssUrl(source.termino),
+          enabled: true,
+          frecuencia: "Diaria",
+          nextRunAt: now,
+          lastStatus: "idle",
+          lastError: "",
+          updatedAt: now,
+        })
+        .where(eq(radarSources.id, source.id));
+      activated += 1;
+    }
+
+    const knownWebsiteEndpoints = new Set(
+      sources
+        .map((source) => publicWebsiteUrl(source.endpointUrl))
+        .filter(Boolean),
+    );
+    const knownEndpoints = new Set(
+      sources.map((source) => source.endpointUrl.trim()).filter(Boolean),
+    );
+    for (const competitor of competitors) {
+      const endpointUrl = publicWebsiteUrl(competitor.web);
+      if (endpointUrl && !knownWebsiteEndpoints.has(endpointUrl)) {
+        const id = randomUUID();
+        await tx.insert(radarSources).values({
+          id,
+          legacyId: id,
+          workspaceId: RADAR_WORKSPACE_ID,
+          termino: competitor.nombre,
+          tipo: "Competidores",
+          frecuencia: "Diaria",
+          notas: `Página pública de ${competitor.nombre}. Se monitoriza solo contenido público.`,
+          connector: "web",
+          endpointUrl,
+          enabled: true,
+          competitorId: competitor.id,
+          nextRunAt: now,
+          lastStatus: "idle",
+          lastError: "",
+          consecutiveFailures: 0,
+          rawRecord: {
+            bootstrap: "public-competitor-page",
+            competitor_name: competitor.nombre,
+          },
+          createdAt: now,
+          updatedAt: now,
+        });
+        knownWebsiteEndpoints.add(endpointUrl);
+        knownEndpoints.add(endpointUrl);
+        added += 1;
+      }
+
+      const newsEndpointUrl = googleNewsRssUrl(`"${competitor.nombre}" casas modulares`);
+      if (!knownEndpoints.has(newsEndpointUrl)) {
+        const id = randomUUID();
+        await tx.insert(radarSources).values({
+          id,
+          legacyId: id,
+          workspaceId: RADAR_WORKSPACE_ID,
+          termino: `${competitor.nombre} — noticias`,
+          tipo: "Competidores",
+          frecuencia: "Diaria",
+          notas: `Noticias públicas relacionadas con ${competitor.nombre}.`,
+          connector: "rss",
+          endpointUrl: newsEndpointUrl,
+          enabled: true,
+          competitorId: competitor.id,
+          nextRunAt: now,
+          lastStatus: "idle",
+          lastError: "",
+          consecutiveFailures: 0,
+          rawRecord: {
+            bootstrap: "public-competitor-news",
+            competitor_name: competitor.nombre,
+          },
+          createdAt: now,
+          updatedAt: now,
+        });
+        knownEndpoints.add(newsEndpointUrl);
+        added += 1;
+      }
+    }
+
+    return { activated, added };
+  });
+}
+
 export type RadarSourceResponse = ReturnType<typeof mapSource>;
 export type RadarCompetitorResponse = ReturnType<typeof mapCompetitor>;
 export type RadarKeywordResponse = ReturnType<typeof mapKeyword>;

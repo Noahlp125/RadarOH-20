@@ -5,6 +5,7 @@ import { initializeRadarDatabaseSecurity } from "./lib/radar/database-security";
 import { startRadarWorker, stopRadarWorker } from "./lib/radar/worker";
 import { createShutdownHandler } from "./lib/shutdown";
 import { setReadiness } from "./lib/observability";
+import { ensureRadarMonitoringSources } from "./lib/radar/repository";
 
 const rawPort = process.env["PORT"];
 
@@ -48,6 +49,8 @@ process.once("SIGINT", () => void shutdown("SIGINT"));
 
 try {
   await initializeRadarDatabaseSecurity();
+  const monitoringSources = await ensureRadarMonitoringSources();
+  logger.info(monitoringSources, "RadarOH public monitoring sources initialized");
   setReadiness(true);
   startRadarWorker();
 } catch (error) {
