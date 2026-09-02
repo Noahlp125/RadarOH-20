@@ -1,0 +1,223 @@
+Antes de continuar con las siguientes fases de implementación, quiero hacer una mejora importante en la interfaz visual de RadarOH.
+
+La arquitectura y el análisis técnico de la Fase 1 están aprobados, pero quiero que revisemos el diseño visual antes de seguir construyendo nuevas funcionalidades.
+
+## OBJETIVO DEL REDISEÑO
+
+Quiero que RadarOH tenga una interfaz:
+
+- Más limpia.
+- Más moderna.
+- Más profesional.
+- Más original.
+- Más premium.
+- Más intuitiva.
+- Visualmente coherente.
+- Fácil de utilizar durante muchas horas.
+
+No quiero simplemente cambiar los colores o aplicar un template genérico.
+
+Quiero que desarrolles una identidad visual propia para RadarOH.
+
+La aplicación debe transmitir que es una herramienta profesional de:
+
+- Inteligencia competitiva.
+- Monitorización.
+- Análisis.
+- Datos.
+- Ciberseguridad.
+- Inteligencia digital.
+
+## IMPORTANTE
+
+NO cambies la arquitectura backend.
+
+NO cambies el modelo de datos.
+
+NO elimines funcionalidades actuales.
+
+NO rompas la lógica existente.
+
+NO empieces todavía con nuevas funcionalidades de monitorización, IA o scraping.
+
+Esta fase debe centrarse principalmente en UX/UI y estructura visual.
+
+Puedes modificar componentes, estilos y estructura del frontend cuando sea necesario.
+
+## DIRECCIÓN VISUAL
+
+Quiero alejarme ligeramente del aspecto actual de dashboard genérico.
+
+Me gustaría una estética más cercana a una herramienta profesional de inteligencia/analytics.
+
+Debe sentirse como un producto propio de OH Casas, no como una plantilla de administración.
+
+Prioriza:
+
+- Espacio en blanco.
+- Jerarquía visual clara.
+- Tipografía moderna.
+- Tarjetas limpias.
+- Bordes sutiles.
+- Sombras muy ligeras.
+- Iconografía consistente.
+- Microinteracciones discretas.
+- Animaciones suaves.
+- Excelente legibilidad.
+- Diseño responsive.
+
+Evita:
+
+- Exceso de elementos.
+- Demasiados colores.
+- Gradientes exagerados.
+- Efectos visuales innecesarios.
+- Glassmorphism excesivo.
+- Animaciones constantes.
+- Aspecto de plantilla SaaS genérica.
+
+## RADAR
+
+El radar es uno de los elementos principales de RadarOH.
+
+Quiero conservar el concepto del radar actual, pero estudiar cómo hacerlo visualmente más elegante y útil.
+
+Debe seguir siendo reconocible como RadarOH.
+
+Puedes mejorar:
+
+- Distribución.
+- Etiquetas.
+- Jerarquía.
+- Interacción.
+- Información mostrada.
+- Estados.
+- Animaciones.
+- Responsive.
+
+Pero no elimines el radar.
+
+## NAVEGACIÓN
+
+Revisa la navegación actual.
+
+Quiero que sea extremadamente fácil acceder a:
+
+- Resumen.
+- Fuentes.
+- Competidores.
+- Keywords.
+- Plan.
+- Futuras secciones de monitorización.
+- Alertas.
+- Historial.
+
+Puedes proponer una navegación lateral o una alternativa si consideras que funciona mejor.
+
+Antes de implementarla, analiza la navegación actual y explica brevemente por qué tu propuesta mejora la experiencia.
+
+## DASHBOARD
+
+Quiero que el Resumen sea realmente un centro de control.
+
+Debe existir una jerarquía visual clara:
+
+1. Información más importante.
+2. Estado general.
+3. Actividad reciente.
+4. Radar.
+5. Métricas.
+6. Información secundaria.
+
+No quiero que todo tenga el mismo peso visual.
+
+## COMPONENTES
+
+Crea o refactoriza componentes reutilizables cuando sea necesario.
+
+Por ejemplo:
+
+- Cards.
+- Stat cards.
+- Badges.
+- Buttons.
+- Tabs.
+- Panels.
+- Modals.
+- Tables.
+- Empty states.
+- Loading states.
+- Alerts.
+- Navigation.
+- Radar components.
+
+Evita continuar concentrando toda la interfaz en App.jsx.
+
+## DISEÑO ORIGINAL
+
+Quiero que antes de implementar el rediseño pienses en una dirección visual concreta para RadarOH.
+
+No quiero que simplemente copies un dashboard conocido.
+
+Puedes inspirarte en patrones modernos de herramientas de:
+
+- Data intelligence.
+- Competitive intelligence.
+- Cybersecurity dashboards.
+- Analytics.
+- OSINT.
+- Business intelligence.
+
+Pero el resultado debe ser original y coherente con RadarOH.
+
+## IDENTIDAD
+
+Mantén una conexión visual con OH Casas, pero sin convertir toda la aplicación en una página corporativa.
+
+RadarOH debe sentirse como:
+
+"una herramienta interna avanzada de inteligencia digital de OH Casas."
+
+## ACCESIBILIDAD
+
+Ten en cuenta:
+
+- Contraste.
+- Tamaños de texto.
+- Estados de focus.
+- Navegación por teclado.
+- Reduced motion.
+- Responsive.
+- Lectura clara de datos.
+
+## RESPONSIVE
+
+El diseño debe funcionar correctamente en:
+
+- Desktop.
+- Laptop.
+- Tablet.
+- Móvil.
+
+Desktop será la prioridad porque será el entorno principal de trabajo, pero no quiero romper el responsive actual.
+
+## ANTES DE IMPLEMENTAR
+
+Primero propón:
+
+1. Dirección visual.
+2. Paleta de colores.
+3. Tipografía.
+4. Sistema de espaciado.
+5. Estilo de tarjetas.
+6. Estilo de navegación.
+7. Diseño del dashboard.
+8. Diseño del radar.
+9. Sistema de estados y badges.
+10. Principales cambios de UX/UI.
+
+Después de presentar la propuesta, puedes implementarla.
+
+No cambies la arquitectura funcional ni los datos.
+
+El objetivo de esta fase es conseguir una interfaz significativamente más limpia, moderna, original y profesional manteniendo la funcionalidad actual.
