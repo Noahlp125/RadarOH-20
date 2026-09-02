@@ -308,7 +308,10 @@ async function requestAnalysis(evidence: Awaited<ReturnType<typeof loadUnanalyze
               "Tipos: launch, pricing, content, reputation, expansion, technology, regulatory, market, other.",
               "Importancia: low, medium, high, critical.",
               "Cada trend: name, direction (emerging|growing|stable|declining), description, confidence, evidence_ids.",
-              "Cada suggested_update: competitor_id, field, value, evidence_ids.",
+               "Cada suggested_update: competitor_id, field, value, evidence_ids.",
+               "Para field usa preferentemente uno de: ubicacion, especialidad, rango_precio, web, redes, fortalezas, debilidades, notas.",
+               "alert debe ser un booleano JSON real: true o false, nunca texto.",
+               "change_event_id solo puede ser un change_event_id exacto del input; evidence_ids solo puede contener evidence_id exactos del input.",
             ].join("\n"),
           },
           {

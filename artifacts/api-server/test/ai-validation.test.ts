@@ -129,6 +129,25 @@ describe("RadarOH AI output validation", () => {
     assert.deepEqual(result.findings[0]?.evidence_ids, ["evidence-1"]);
   });
 
+  it("normalizes explicit text booleans and preserves descriptive suggested fields", () => {
+    const result = parseAndValidateAiOutput(
+      JSON.stringify(output({
+        findings: [finding({
+          alert: "false",
+          suggested_updates: [{
+            competitor_id: "competitor-1",
+            field: "proyectos_modulares",
+            value: "Proyecto citado explícitamente",
+            evidence_ids: ["evidence-1"],
+          }],
+        })],
+      })),
+      evidence,
+    );
+    assert.equal(result.findings[0]?.alert, false);
+    assert.equal(result.findings[0]?.suggested_updates[0]?.field, "proyectos_modulares");
+  });
+
   it("retries rejected responses without returning partial findings", async () => {
     const responses = [
       "{not-json",

@@ -2,10 +2,18 @@ import { z } from "zod";
 
 export const suggestedUpdateSchema = z.object({
   competitor_id: z.string(),
-  field: z.enum(["ubicacion", "especialidad", "rango_precio", "web", "redes", "fortalezas", "debilidades", "notas"]),
+  field: z.string().min(1).max(120),
   value: z.string().min(1).max(1500),
   evidence_ids: z.array(z.string()).min(1),
 });
+
+const aiBooleanSchema = z.preprocess((value) => {
+  if (typeof value !== "string") return value;
+  const normalized = value.trim().toLocaleLowerCase();
+  if (["true", "yes", "sí", "si", "1"].includes(normalized)) return true;
+  if (["false", "no", "0"].includes(normalized)) return false;
+  return value;
+}, z.boolean());
 
 export const aiOutputSchema = z.object({
   summary: z.string().min(1).max(5000),
@@ -31,7 +39,7 @@ export const aiOutputSchema = z.object({
     trend: z.string().max(500).default(""),
     evidence_ids: z.array(z.string()).min(1),
     suggested_updates: z.array(suggestedUpdateSchema).max(8).default([]),
-    alert: z.boolean().default(false),
+    alert: aiBooleanSchema.default(false),
   })).max(50),
 });
 
