@@ -1,0 +1,428 @@
+{
+  "sources": [
+    {
+      "id": "b1613964-7253-4dac-9534-98e1652c8721",
+      "termino": "OH CASAS MODULARES ",
+      "tipo": "Prensa y sector",
+      "frecuencia": "Diaria",
+      "notas": "Vigilancia de marca propia — menciones generales en medios y webs del sector"
+    },
+    {
+      "id": "aac344be-af4c-4c52-9925-851052389a4b",
+      "termino": "OH CASAS MODULARES OPINIONES",
+      "tipo": "Portales y directorios",
+      "frecuencia": "Diaria",
+      "notas": "Reputación — reseñas en Google Business y portales similares"
+    },
+    {
+      "id": "2f14faf5-3cc8-4072-a233-77966a96f51f",
+      "termino": "#casasmodulares ",
+      "tipo": "Redes sociales",
+      "frecuencia": "Semanal",
+      "notas": "Hashtag genérico del sector"
+    },
+    {
+      "id": "3cefb5a2-b9af-4d55-82cc-69dcef1c1283",
+      "termino": "casas modulares Albacete ",
+      "tipo": "Portales y directorios",
+      "frecuencia": "Semanal",
+      "notas": "Posicionamiento local en directorios y listados"
+    },
+    {
+      "id": "1e195357-3000-4591-94e9-71e6e8858efc",
+      "termino": "casas modulares Castilla-La-Mancha",
+      "tipo": "Portales y directorios",
+      "frecuencia": "Semanal",
+      "notas": ""
+    },
+    {
+      "id": "4856fe58-a48a-4ec8-8ac3-65ecd39dc21d",
+      "termino": "hogarmodular.com",
+      "tipo": "Portales y directorios",
+      "frecuencia": "Mensual",
+      "notas": "Comparador que rankea competidores, revisar si aparecemos"
+    },
+    {
+      "id": "7e79fd14-d801-44ca-8abd-98f7ed32759b",
+      "termino": "europages.es",
+      "tipo": "Portales y directorios",
+      "frecuencia": "Mensual",
+      "notas": "Directorio B2B de fabricantes"
+    },
+    {
+      "id": "59c8d6d9-0f8f-4358-9716-6ca22bd83b7b",
+      "termino": "terrenos.es",
+      "tipo": "Portales y directorios",
+      "frecuencia": "Mensual",
+      "notas": "Listado de empresas por provincia"
+    },
+    {
+      "id": "5c209136-82e0-4b2b-aa79-0ea3d486636a",
+      "termino": "construccion modular",
+      "tipo": "Prensa y sector",
+      "frecuencia": "Mensual",
+      "notas": "Medios sectoriales tipo interempresas.net"
+    },
+    {
+      "id": "33e8d6cc-bf75-4e2b-b0ec-54f89558f7de",
+      "termino": "Modular Home, Lançois Doval, Charlesson",
+      "tipo": "Redes sociales",
+      "frecuencia": "Semanal",
+      "notas": "Perfiles de los 3 competidores locales prioritarios"
+    }
+  ],
+  "competitors": [
+    {
+      "id": "c5c3f512-7611-4bfb-9668-fe1cef2ebe00",
+      "nombre": "Modular Home",
+      "ubicacion": "Madrid (delegación en Albacete)",
+      "especialidad": "Sistema MH System, hormigón y acero",
+      "rango_precio": "Sin publicar — pedir presupuesto",
+      "web": "modularhome.es",
+      "redes": "",
+      "fortalezas": "Homologación específica para normativa de Castilla-La Mancha y Albacete; más de 20 años de experiencia; delegación comercial abriéndose cerca de Albacete",
+      "debilidades": "",
+      "notas": "Es el competidor con presencia geográfica más directa sobre la zona",
+      "prioridad": "alta",
+      "estado": "pendiente"
+    },
+    {
+      "id": "30aed7cd-1d5d-4d85-aff5-9c53dacdb019",
+      "nombre": "Lançois Doval",
+      "ubicacion": "Ámbito nacional, con cobertura específica en Cuenca, Guadalajara, Ciudad Real, Toledo y Albacete",
+      "especialidad": "Viviendas, edificios y naves modulares a medida",
+      "rango_precio": "",
+      "web": "lancoisdoval.es",
+      "redes": "",
+      "fortalezas": "Cobertura explícita de toda Castilla-La Mancha; también hace naves/edificios (posible solape con clientes industriales de OH Casas)",
+      "debilidades": "",
+      "notas": "",
+      "prioridad": "alta",
+      "estado": "pendiente"
+    },
+    {
+      "id": "c60baebe-9a3e-41e9-86aa-49857ea6a55a",
+      "nombre": "Charlesson",
+      "ubicacion": "Entrega en Albacete (Castilla-La Mancha)",
+      "especialidad": "Modelos llave en mano de 36m² y 77m²",
+      "rango_precio": "Desde 12.900€ (36m²) y 19.900€ (77m²)",
+      "web": "charlessonhome.es",
+      "redes": "",
+      "fortalezas": "Precio de entrada muy bajo; aislamiento pensado para clima frío (zona climática D3, la de Albacete); entrega 45-60 días",
+      "debilidades": "",
+      "notas": "Competidor de precio agresivo — vigilar de cerca su oferta comercial",
+      "prioridad": "alta",
+      "estado": "pendiente"
+    },
+    {
+      "id": "0d298237-dbc4-49f4-8171-9dea5fe9b237",
+      "nombre": "Cofitor",
+      "ubicacion": "Albelda de Iregua, La Rioja",
+      "especialidad": "Prefabricadas y modulares en acero",
+      "rango_precio": "",
+      "web": "casasprefabricadascofitor.com",
+      "redes": "",
+      "fortalezas": "Desde 1994; modelos estandarizados económicos y a medida; buena eficiencia energética",
+      "debilidades": "",
+      "notas": "",
+      "prioridad": "media",
+      "estado": "pendiente"
+    },
+    {
+      "id": "dbdc1acb-7141-4d3c-b1cf-281e44c5aa14",
+      "nombre": "ABS – Kyabin",
+      "ubicacion": "Azuqueca de Henares, Guadalajara",
+      "especialidad": "Tiny houses modulares",
+      "rango_precio": "",
+      "web": "abs.es",
+      "redes": "",
+      "fortalezas": "Más de 30 años de experiencia; construcción en 30 días + 1 día de instalación; reducción del 90% de huella de carbono",
+      "debilidades": "",
+      "notas": "Cercanía geográfica a Castilla-La Mancha (Guadalajara)",
+      "prioridad": "media",
+      "estado": "pendiente"
+    },
+    {
+      "id": "9c53fa14-f8bd-4b86-a3c5-5055910955f8",
+      "nombre": "Room2030",
+      "ubicacion": "Avilés, Asturias",
+      "especialidad": "Arquitectura modular escalable (vivienda, hotel, oficina)",
+      "rango_precio": "",
+      "web": "room2030.com",
+      "redes": "",
+      "fortalezas": "Fabricación en una semana, instalación en un día; colaboración con centros de I+D",
+      "debilidades": "",
+      "notas": "",
+      "prioridad": "baja",
+      "estado": "pendiente"
+    },
+    {
+      "id": "9afcd9ed-2b5b-44b8-8c4a-4e28e032a7a0",
+      "nombre": "AEDAS Homes",
+      "ubicacion": "Madrid, ámbito nacional",
+      "especialidad": "Viviendas industrializadas (línea AEDAS Offsite)",
+      "rango_precio": "",
+      "web": "aedashomes.com",
+      "redes": "",
+      "fortalezas": "Respaldo de gran promotora; hasta 60% más rápido que construcción tradicional; calificación energética A de serie",
+      "debilidades": "",
+      "notas": "Otra escala de negocio, más referencia que competencia directa",
+      "prioridad": "baja",
+      "estado": "pendiente"
+    },
+    {
+      "id": "af9d15ac-3cb1-4cdb-8a44-7ae3839d614f",
+      "nombre": "ABC Arquitectura Modular",
+      "ubicacion": "Madrid y Valencia ",
+      "especialidad": "Viviendas modulares a medida, alto diseño",
+      "rango_precio": "",
+      "web": "abcarquitecturamodular.es",
+      "redes": "",
+      "fortalezas": "Proyectos llave en mano; alta certificación medioambiental",
+      "debilidades": "",
+      "notas": "",
+      "prioridad": "baja",
+      "estado": "pendiente"
+    },
+    {
+      "id": "8f8f99d6-312f-408a-bb46-d1f74fcd1bdf",
+      "nombre": "A-Cero Tech",
+      "ubicacion": "Madrid, ámbito nacional/internacional",
+      "especialidad": "Casas modulares de lujo y diseño de autor",
+      "rango_precio": "",
+      "web": "a-cerotech.com",
+      "redes": "",
+      "fortalezas": "Marca reconocida del estudio A-Cero; fabricación bajo controles industriales estrictos",
+      "debilidades": "",
+      "notas": "Segmento premium, no compite en precio",
+      "prioridad": "baja",
+      "estado": "pendiente"
+    },
+    {
+      "id": "8bf6cd3e-99ed-4f7c-85b7-e9d110704108",
+      "nombre": "De40Pies",
+      "ubicacion": "Comunidad Valenciana, ámbito nacional",
+      "especialidad": "Viviendas en contenedores marítimos reutilizados",
+      "rango_precio": "",
+      "web": "de40pies.com",
+      "redes": "",
+      "fortalezas": "Propuesta muy diferenciada (reutilización, sostenibilidad); montaje rápido",
+      "debilidades": "",
+      "notas": "Nicho de producto distinto al de OH Casas",
+      "prioridad": "baja",
+      "estado": "pendiente"
+    },
+    {
+      "id": "fb799db9-a875-4599-8359-c989339fe39e",
+      "nombre": "Atlántida Homes",
+      "ubicacion": "Ámbito nacional (Grupo Riofrío)",
+      "especialidad": "Casas modulares de hormigón industrializado",
+      "rango_precio": "",
+      "web": "atlantidahomes.com",
+      "redes": "",
+      "fortalezas": "Opción de certificación Passivhaus; entrega en 4-6 meses; acabados premium",
+      "debilidades": "",
+      "notas": "",
+      "prioridad": "media",
+      "estado": "pendiente"
+    },
+    {
+      "id": "da8c0b65-c07f-4a4e-afa2-b115c312fffb",
+      "nombre": "Casasinhaus",
+      "ubicacion": "Cataluña, ámbito nacional/internacional",
+      "especialidad": "Casas modulares de madera, estándar Passivhaus",
+      "rango_precio": "",
+      "web": "casasinhaus.com",
+      "redes": "",
+      "fortalezas": "Muy alta eficiencia energética; integración de autoconsumo",
+      "debilidades": "",
+      "notas": "",
+      "prioridad": "baja",
+      "estado": "pendiente"
+    },
+    {
+      "id": "4e78806a-ee14-4de5-acee-ff22ea2319f4",
+      "nombre": "Houseoner",
+      "ubicacion": "Valencia, ámbito nacional",
+      "especialidad": "Casas modulares industrializadas en acero y hormigón",
+      "rango_precio": "",
+      "web": "houseoner.com",
+      "redes": "",
+      "fortalezas": "Entrega en 5 meses aprox.; clase energética A o superior",
+      "debilidades": "",
+      "notas": "",
+      "prioridad": "media",
+      "estado": "pendiente"
+    },
+    {
+      "id": "d571a928-0a75-407a-8bee-1d53ddd09aaf",
+      "nombre": "Lercasa",
+      "ubicacion": "Granada, ámbito nacional",
+      "especialidad": "Casas modulares y prefabricadas, modelos estándar y a medida",
+      "rango_precio": "",
+      "web": "lercasa.es",
+      "redes": "",
+      "fortalezas": "Más de 40 años de experiencia; financiación propia; servicio integral",
+      "debilidades": "",
+      "notas": "Segmento de precio similar al nuestro — buena referencia de posicionamiento",
+      "prioridad": "media",
+      "estado": "pendiente"
+    }
+  ],
+  "keywords": [
+    {
+      "id": "3e309377-2153-4973-b8d8-7b968a28b421",
+      "termino": "OH Casas Modulares",
+      "volumen": "Medio",
+      "posicion": "5",
+      "notas": ""
+    },
+    {
+      "id": "952cfefd-4346-4d2f-bb77-4e2303337bbf",
+      "termino": "casas modulares Albacete",
+      "volumen": "Bajo",
+      "posicion": "",
+      "notas": ""
+    },
+    {
+      "id": "70e70e04-49ad-40e8-8ff8-9b4c021b0b25",
+      "termino": "casas prefabricadas Albacete",
+      "volumen": "Bajo",
+      "posicion": "",
+      "notas": ""
+    },
+    {
+      "id": "d88106da-af21-45f9-9619-26581f828e3b",
+      "termino": "construcción modular Castilla-La Mancha",
+      "volumen": "Bajo",
+      "posicion": "",
+      "notas": ""
+    },
+    {
+      "id": "040fac93-b30e-4ba6-9a0f-df5707813826",
+      "termino": "casas modulares Castilla-La Mancha",
+      "volumen": "Bajo",
+      "posicion": "",
+      "notas": ""
+    },
+    {
+      "id": "7bcc6967-3bad-4f2b-8dee-b3c7a07e42b3",
+      "termino": "casas modulares",
+      "volumen": "Alto",
+      "posicion": "",
+      "notas": ""
+    },
+    {
+      "id": "24378838-8cea-4e97-8fcf-4824aefb053d",
+      "termino": "casas modulares precio",
+      "volumen": "Alto",
+      "posicion": "",
+      "notas": ""
+    },
+    {
+      "id": "a213af54-93e9-45b9-a84f-07442e587866",
+      "termino": "casas prefabricadas llave en mano",
+      "volumen": "Alto",
+      "posicion": "",
+      "notas": ""
+    },
+    {
+      "id": "0a599bec-fae8-4459-af9a-c4818fa23cd3",
+      "termino": "precio casas modulares por m2",
+      "volumen": "Medio",
+      "posicion": "",
+      "notas": ""
+    },
+    {
+      "id": "395d0be9-496a-4269-b00b-2c9676401002",
+      "termino": "casas modulares hormigón",
+      "volumen": "Medio",
+      "posicion": "",
+      "notas": ""
+    },
+    {
+      "id": "56a974db-dd94-4801-a84e-cf618f2bb552",
+      "termino": "casas modulares baratas",
+      "volumen": "Medio",
+      "posicion": "",
+      "notas": ""
+    },
+    {
+      "id": "fa1c291e-946a-46c9-a0d6-2bca626f2f26",
+      "termino": "casa modular 100m2 precio",
+      "volumen": "Medio",
+      "posicion": "",
+      "notas": ""
+    },
+    {
+      "id": "40b63e98-0c9f-4635-8db4-ea10bb475f1a",
+      "termino": "financiación casa modular",
+      "volumen": "Bajo",
+      "posicion": "",
+      "notas": ""
+    },
+    {
+      "id": "1d12006d-411f-4eeb-9311-5b18fd89a759",
+      "termino": "licencia de obra casa modular",
+      "volumen": "Bajo",
+      "posicion": "",
+      "notas": ""
+    },
+    {
+      "id": "e20fe8b9-4344-43be-8542-73341ad8979a",
+      "termino": "casa modular llave en mano precio cerrado",
+      "volumen": "Bajo",
+      "posicion": "",
+      "notas": ""
+    }
+  ],
+  "plan": {
+    "30": [
+      {
+        "id": "afbc7bdd-0066-4914-8e87-afd0189f3054",
+        "text": "Auditoría técnica básica de ohcasas.es (indexación en Google, velocidad, meta títulos y descripciones)",
+        "done": false
+      },
+      {
+        "id": "fae647d1-7342-43ef-aed8-bb884499ec40",
+        "text": "Comprobar si ohcasas.es está dado de alta en Google Search Console y Google Business Profile",
+        "done": false
+      },
+      {
+        "id": "939efdac-4bf6-4568-8568-f5a923ef73db",
+        "text": "Verificar por qué el dominio no aparece ni para OH Casas Modulares Albacete ni para casas modulares Albacete",
+        "done": false
+      }
+    ],
+    "60": [
+      {
+        "id": "275a4c62-b22b-4b5f-bc80-147a97bff42a",
+        "text": "Crear o revisar contenido en la web enfocado a las keywords locales prioritarias (Albacete, Castilla-La Mancha)",
+        "done": false
+      },
+      {
+        "id": "0a9e285b-c7de-4353-826f-fc5e8a48f000",
+        "text": "Proponer a Carmen/Dirección reforzar el enlace entre Instagram/Facebook (donde sí hay tracción) y la web, para trasladar esa autoridad de marca al SEO",
+        "done": false
+      },
+      {
+        "id": "637d8269-8fc0-4a58-9e97-9fc0890a279e",
+        "text": "Configurar y verificar Google Business Profile si no existe, dado el volumen de reseñas ya activo en GoWork",
+        "done": false
+      }
+    ],
+    "90": [
+      {
+        "id": "d379bb2c-15d0-4a96-9762-b8c8146aba91",
+        "text": "Repetir la comprobación de las 15 keywords y comparar con la línea base del día 30 (primer indicador real de progreso)",
+        "done": false
+      },
+      {
+        "id": "6d089da1-b41c-4479-a529-958cf8855f93",
+        "text": "Incluir en el informe trimestral la comparación \"presencia en redes vs. presencia en buscadores\" como hallazgo diferencial",
+        "done": false
+      }
+    ]
+  },
+  "exportedAt": "2026-09-01T09:24:53.703Z"
+}
