@@ -13,6 +13,10 @@ if (!process.env.DATABASE_URL) {
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle(pool, { schema });
 
+export function createRadarPool(connectionString: string) {
+  return new Pool({ connectionString });
+}
+
 export * from "./schema";
 export * from "./radar-database-mode";
 export type { PoolClient } from "pg";

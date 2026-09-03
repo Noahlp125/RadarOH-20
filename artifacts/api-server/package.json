@@ -9,6 +9,7 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "test": "node ./test/run.mjs",
+    "test:supabase-rehearsal": "node ./test/supabase-rehearsal-run.mjs",
     "test:db": "vitest run src/__tests__/database-security.integration.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

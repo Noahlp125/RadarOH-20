@@ -1,0 +1,51 @@
+The Supabase staging rehearsal and rollback have been successfully completed and validated.
+
+Do NOT perform any production cutover or change the active production database yet.
+
+Proceed with the following tasks in order:
+
+1. Task #15 — Automate the migration/regression checks.
+   Turn the successful rehearsal validations into repeatable automated tests, including:
+   - Table/data count consistency
+   - UUID and legacy_id integrity
+   - Foreign-key integrity
+   - RLS isolation
+   - Authentication/authorization
+   - JSON export/import
+   - Worker leases
+   - Advisory locks
+   - API health/readiness
+   - AI relationships
+   - Evidence/change-event fingerprints
+   - Rollback/data-integrity checks
+
+2. Task #16 — Review the index/FK warnings.
+   Analyze the 21 informational FK warnings about missing coverage indexes using the actual RadarOH query patterns.
+   Do not blindly add or remove indexes.
+   Also review the 10 unused-index warnings, but do not remove anything solely because it is currently unused without representative production-like traffic.
+
+3. After #15 and #16, perform a FINAL READ-ONLY production readiness audit covering:
+   - Supabase backup/PITR
+   - Capacity and expected growth
+   - Monitoring and alerts
+   - RLS and permissions
+   - Connection strategy
+   - Session Pooler requirements for advisory locks
+   - Secrets/configuration
+   - Rollback procedure
+   - Maintenance window
+   - Data freeze/cutover procedure
+   - Recovery/RPO/RTO considerations
+   - Any remaining security, integrity, performance or scalability risks
+
+Important constraints:
+- Do not modify production.
+- Do not change the active production database.
+- Do not perform the cutover.
+- Do not delete or migrate production data.
+- Do not introduce unrelated features.
+- Keep Supabase staging available for further testing.
+- Make changes only in the development/test environment unless explicitly required otherwise.
+- At the end, provide a clear GO / NO-GO recommendation for production cutover and list any remaining blockers.
+
+Wait for my explicit approval before performing any production cutover.

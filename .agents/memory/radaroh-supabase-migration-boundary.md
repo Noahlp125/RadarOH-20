@@ -31,3 +31,14 @@ queries, while Session mode does.
 contention check before relying on the pooler. Keep the direct URL available for
 environments that support IPv6, but do not treat it as usable until tested from
 the actual runtime.
+
+Automated rehearsals must keep separate Session pooler URLs for the staging
+owner and the restricted application runtime.
+
+**Why:** The pooler owner identity can administer tables but cannot necessarily
+impersonate the dedicated runtime login. Conversely, the runtime correctly
+cannot perform count, constraint or cleanup queries outside `radar_backend`.
+
+**How to apply:** Use the owner URL only for baseline verification,
+transactional constraints and cleanup. Use the runtime URL for repository, RLS,
+API and advisory-lock checks; never reuse either URL as the Replit source.

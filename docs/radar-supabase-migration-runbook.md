@@ -252,3 +252,37 @@ Any later rollback requires a separately reviewed reverse-delta migration while
 both APIs are write-frozen. Never run both workers against the same live
 sources. The schema migration and data runner contain no destructive rollback
 statements and never modify or delete the Replit database.
+
+## Automated staging rehearsal
+
+The opt-in harness reproduces the critical staging checks without running during
+normal builds:
+
+```bash
+RADAR_SUPABASE_REHEARSAL_CONFIRM=YES \
+RADAR_REHEARSAL_SOURCE_URL="$DATABASE_URL" \
+RADAR_REHEARSAL_OWNER_URL="$SUPABASE_STAGING_DB_SESSION_URL" \
+DATABASE_URL="<dedicated-staging-runtime-url>" \
+RADAR_DATABASE_PROVIDER=supabase \
+RADAR_REHEARSAL_WORKSPACE_UUID="<migrated-workspace-uuid>" \
+RADAR_REHEARSAL_API_URL="http://127.0.0.1:<isolated-api-port>" \
+pnpm --filter @workspace/api-server run test:supabase-rehearsal
+```
+
+Safety requirements:
+
+- `DATABASE_URL` must be the restricted staging runtime login, not production.
+- `RADAR_REHEARSAL_OWNER_URL` must be the staging owner Session pooler URL.
+- The isolated API must run with `RADAR_WRITE_FREEZE=true` and
+  `RADAR_WORKER_ENABLED=false`.
+- Source and target URLs must differ.
+- Constraint writes are wrapped in `ROLLBACK`.
+- The JSON round-trip audit row is deleted in cleanup.
+- The harness captures all source IDs before testing and fails if any disappear.
+- Update the frozen baseline counts in
+  `test/supabase-rehearsal.test.ts` only after accepting a new snapshot.
+
+The harness validates frozen counts, UUID/legacy integrity, foreign keys, RLS,
+runtime authorization, JSON import/export, worker lease shape, advisory locks,
+API health/readiness, AI/evidence relations, fingerprints, freeze behavior and
+source data preservation.
