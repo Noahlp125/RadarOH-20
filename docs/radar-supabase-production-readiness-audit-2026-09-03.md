@@ -240,6 +240,9 @@ Both options may have provider cost and require a separate approval.
 - Production runtime login and Session Pooler configuration plan.
 - Detailed cutover gates, responsibilities, smoke tests and rollback procedure.
 - Read-only audit of the definitive Supabase project.
+- Concrete closure checklist with dependencies, evidence, approvers, downtime
+  and rollback implications:
+  `docs/radar-supabase-no-go-closure-checklist-2026-09-03.md`.
 
 ## Remaining blockers
 
