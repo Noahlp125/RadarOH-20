@@ -1,0 +1,43 @@
+The final audit is correctly marked NO-GO. Do not perform any production cutover.
+
+Proceed with the remaining production-readiness work, but keep all production changes strictly read-only unless I explicitly approve them.
+
+Work through the blockers in this order:
+
+1. Define and document the proposed RPO/RTO for RadarOH, including the assumptions and operational implications.
+2. Verify the backup/PITR capabilities of the definitive Supabase production project and prepare a timed restore-drill procedure. Do not modify production data.
+3. Prepare a capacity/growth assessment based on the current RadarOH dataset and expected monitoring/AI growth. Identify what traffic/load should be used for representative testing.
+4. Define the required monitoring and alerts for Supabase, API and worker, and identify how they will be verified.
+5. In staging only, test the three recommended indexes:
+   - radar_sources (competitor_id)
+   - radar_ai_alerts (competitor_id)
+   - radar_monitor_evidence (run_id)
+   Measure their impact using representative query patterns before deciding whether to keep them.
+6. Prepare the production runtime login and Session Pooler configuration plan, but do not create or modify production secrets yet.
+7. Prepare a detailed cutover runbook including:
+   - pre-cutover checklist
+   - data freeze
+   - final consistency validation
+   - migration
+   - application/worker switch
+   - smoke tests
+   - rollback criteria
+   - rollback procedure
+   - responsibilities
+   - estimated downtime/window
+8. Repeat the complete rehearsal against the definitive Supabase production project in a safe/pre-production manner before any real cutover, if technically possible.
+
+At the end, produce a final production-readiness report with:
+- GO / NO-GO
+- completed blockers
+- remaining blockers
+- evidence for each decision
+- exact actions required before production cutover
+
+IMPORTANT:
+- Do not perform the production cutover.
+- Do not migrate or delete production data.
+- Do not change the active production database.
+- Do not create production secrets without explicit approval.
+- Do not make unrelated code changes.
+- Ask for approval before any irreversible or production-affecting action.
