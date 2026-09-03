@@ -6,3 +6,4 @@
 - [RadarOH worker coordination](radaroh-worker-coordination.md) — recurring jobs require a DB lease plus per-job advisory fencing and recovery on every leader tick.
 - [Drizzle RLS policy reconciliation](drizzle-rls-policy-reconciliation.md) — schema push may not repair policy expressions; normalize and verify RLS at startup.
 - [RadarOH operational boundaries](radaroh-operational-boundaries.md) — API replicas may autoscale, but the durable worker remains single-active; managed backup/DR requires operator verification.
+- [RadarOH Supabase migration boundary](radaroh-supabase-migration-boundary.md) — migrate PostgreSQL first; retain Clerk, API, Drizzle, JSON compatibility, legacy IDs, and Replit rollback.
