@@ -81,11 +81,16 @@ function nullableText(value: unknown): string | null {
 }
 
 function numberValue(value: unknown, fallback = 0): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
 }
 
-function jsonValue(value: unknown, fallback: unknown): unknown {
-  return value === null || value === undefined ? fallback : value;
+function jsonValue(value: unknown, fallback: unknown): string {
+  return JSON.stringify(value === null || value === undefined ? fallback : value);
 }
 
 function stableTargetUuid(tableName: string, legacyId: unknown): string {
@@ -513,7 +518,7 @@ async function migrate(): Promise<void> {
         workspaceId, text(row.id), text(row.trigger), text(row.model),
         text(row.status), numberValue(row.source_evidence_count),
         numberValue(row.event_count), text(row.summary),
-        evidenceIds, jsonValue(row.trends, []), numberValue(row.attempt_count),
+        jsonValue(evidenceIds, []), jsonValue(row.trends, []), numberValue(row.attempt_count),
         jsonValue(row.attempt_errors, []), text(row.error_message),
         row.started_at, row.completed_at,
       ],
@@ -537,7 +542,8 @@ async function migrate(): Promise<void> {
         text(row.event_type), text(row.importance), numberValue(row.relevance),
         numberValue(row.confidence), text(row.title), text(row.summary),
         text(row.rationale), text(row.opportunity), text(row.risk),
-        text(row.trend), jsonValue(row.suggested_updates, []), evidenceIds,
+        text(row.trend), jsonValue(row.suggested_updates, []),
+        jsonValue(evidenceIds, []),
         row.created_at,
       ],
     );

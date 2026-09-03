@@ -17,3 +17,17 @@ and would weaken rollback. The user explicitly approved the staged boundary.
 the frontend during the database migration. Require explicit approval before
 applying schema or copying data, stop the old worker before cutover, and retain
 the JSON backup/import/export path throughout the transition.
+
+When a Supabase direct database endpoint is IPv6-only but the Replit runtime has
+no IPv6 route, use the Shared Pooler in Session mode on port 5432 for migration
+and backend runtime rehearsals. Do not substitute Transaction mode for the
+durable worker.
+
+**Why:** RadarOH depends on session-scoped advisory locks for leader election
+and per-job fencing. Transaction pooling cannot preserve those locks across
+queries, while Session mode does.
+
+**How to apply:** Confirm connectivity and run a two-session advisory-lock
+contention check before relying on the pooler. Keep the direct URL available for
+environments that support IPv6, but do not treat it as usable until tested from
+the actual runtime.

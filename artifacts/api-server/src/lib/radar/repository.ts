@@ -334,9 +334,9 @@ async function readStateTx(tx: RadarTransaction): Promise<RadarStateResponse> {
     competitors: competitors.map(mapCompetitor),
     keywords: keywords.map(mapKeyword),
     plan: {
-      "30": planItems.filter((item) => item.horizon === "30").map(mapPlanItem),
-      "60": planItems.filter((item) => item.horizon === "60").map(mapPlanItem),
-      "90": planItems.filter((item) => item.horizon === "90").map(mapPlanItem),
+      "30": planItems.filter((item) => String(item.horizon) === "30").map(mapPlanItem),
+      "60": planItems.filter((item) => String(item.horizon) === "60").map(mapPlanItem),
+      "90": planItems.filter((item) => String(item.horizon) === "90").map(mapPlanItem),
     },
   };
 }
