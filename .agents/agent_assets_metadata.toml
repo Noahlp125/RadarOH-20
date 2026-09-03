@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "RjKjoCQBZZ46CALG-9clK"
+uri = "file://docs/radar-supabase-no-go-closure-checklist-2026-09-03.md"
+type = "text"
+title = "Checklist para cerrar bloqueantes NO-GO de RadarOH"
+description = "Checklist operativo con acciones, entornos, evidencias, aprobaciones, riesgos, downtime y rollback."
+logical_id = "2d86d0cd-e856-40c2-ae74-056fe3e61397"
+content_hash = "sha256:96c26ebf2d0a1d064678f9415b8334fb9bc6769a534faf6a0c6a3af22f7ca343"
+size = 20664
+mtime_ms = 1788426419594
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:e19eea25-3fd6-40ce-834a-83f0d8615eb4/2d86d0cd-e856-40c2-ae74-056fe3e61397/bd244f15-149f-4bdb-b7ea-0e23c2d6d0ed"
+storage_version_token = "1788426760676174"
+content_type = "text/markdown"
