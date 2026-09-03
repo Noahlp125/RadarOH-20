@@ -1,11 +1,18 @@
 import { createHash, randomUUID } from "node:crypto";
 import { and, asc, desc, eq, notInArray, sql } from "drizzle-orm";
-import { db, type RadarTransaction } from "@workspace/db";
+import {
+  db,
+  isSupabaseRadarDatabase,
+  type RadarTransaction,
+} from "@workspace/db";
 import {
   radarCompetitors,
+  radarChangeEvents,
+  radarAiAlerts,
   radarImports,
   radarKeywords,
   radarPlanItems,
+  radarMonitorRuns,
   radarSources,
   radarWorkspaces,
 } from "@workspace/db";
@@ -25,13 +32,38 @@ import {
 } from "./validation";
 import { getRadarDatabaseRole } from "./database-security";
 
-const configuredWorkspaceId = process.env.RADAR_WORKSPACE_ID;
+export class RadarHistoryConflictError extends Error {}
 
-if (!configuredWorkspaceId) {
+function isForeignKeyViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "23503"
+  );
+}
+
+const configuredWorkspaceKey = process.env.RADAR_WORKSPACE_ID;
+
+if (!configuredWorkspaceKey) {
   throw new Error("RADAR_WORKSPACE_ID must be configured for RadarOH.");
 }
 
-export const RADAR_WORKSPACE_ID: string = configuredWorkspaceId;
+export const RADAR_WORKSPACE_KEY: string = configuredWorkspaceKey;
+const configuredWorkspaceUuid = process.env.RADAR_WORKSPACE_UUID;
+if (
+  isSupabaseRadarDatabase() &&
+  !configuredWorkspaceUuid?.match(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+  )
+) {
+  throw new Error(
+    "RADAR_WORKSPACE_UUID must be a valid UUID when RADAR_DATABASE_PROVIDER=supabase.",
+  );
+}
+export const RADAR_WORKSPACE_ID: string = isSupabaseRadarDatabase()
+  ? configuredWorkspaceUuid!
+  : configuredWorkspaceKey;
 
 function googleNewsRssUrl(term: string) {
   return `https://news.google.com/rss/search?q=${encodeURIComponent(term)}&hl=es&gl=ES&ceid=ES:es`;
@@ -256,12 +288,17 @@ export async function withRadarTransaction<T>(
     await tx.execute(
       sql`select set_config('app.workspace_id', ${RADAR_WORKSPACE_ID}, true)`,
     );
-    await tx
-      .insert(radarWorkspaces)
-      .values({ id: RADAR_WORKSPACE_ID, name: "OH Casas" })
-      .onConflictDoNothing();
+    if (!isSupabaseRadarDatabase()) {
+      await tx
+        .insert(radarWorkspaces)
+        .values({ id: RADAR_WORKSPACE_ID, name: "OH Casas" })
+        .onConflictDoNothing();
+    }
     const role = getRadarDatabaseRole();
-    if (!/^radar_app_[a-f0-9]{12}$/.test(role)) {
+    if (
+      role !== "radar_backend" &&
+      !/^radar_app_[a-f0-9]{12}$/.test(role)
+    ) {
       throw new Error("RadarOH database role is not initialized");
     }
     await tx.execute(sql.raw(`set local role "${role}"`));
@@ -292,7 +329,7 @@ async function readStateTx(tx: RadarTransaction): Promise<RadarStateResponse> {
     .orderBy(asc(radarPlanItems.createdAt));
 
   return {
-    workspaceId: RADAR_WORKSPACE_ID,
+    workspaceId: RADAR_WORKSPACE_KEY,
     sources: sources.map(mapSource),
     competitors: competitors.map(mapCompetitor),
     keywords: keywords.map(mapKeyword),
@@ -595,13 +632,44 @@ export async function updateRadarSource(id: string, input: unknown) {
 }
 
 export async function deleteRadarSource(id: string) {
-  return withRadarTransaction(async (tx) => {
-    const [deleted] = await tx.delete(radarSources).where(and(
-      eq(radarSources.workspaceId, RADAR_WORKSPACE_ID),
-      eq(radarSources.legacyId, id),
-    )).returning({ id: radarSources.id });
-    return Boolean(deleted);
-  });
+  try {
+    return await withRadarTransaction(async (tx) => {
+      const [existing] = await tx
+        .select({ id: radarSources.id })
+        .from(radarSources)
+        .where(and(
+          eq(radarSources.workspaceId, RADAR_WORKSPACE_ID),
+          eq(radarSources.legacyId, id),
+        ))
+        .for("update");
+      if (!existing) return false;
+      const [historicalRun] = await tx
+        .select({ id: radarMonitorRuns.id })
+        .from(radarMonitorRuns)
+        .where(and(
+          eq(radarMonitorRuns.workspaceId, RADAR_WORKSPACE_ID),
+          eq(radarMonitorRuns.sourceId, existing.id),
+        ))
+        .limit(1);
+      if (historicalRun) {
+        throw new RadarHistoryConflictError(
+          "La fuente tiene historial. Desactívala en lugar de eliminarla.",
+        );
+      }
+      const [deleted] = await tx.delete(radarSources).where(and(
+        eq(radarSources.workspaceId, RADAR_WORKSPACE_ID),
+        eq(radarSources.legacyId, id),
+      )).returning({ id: radarSources.id });
+      return Boolean(deleted);
+    });
+  } catch (error) {
+    if (isForeignKeyViolation(error)) {
+      throw new RadarHistoryConflictError(
+        "La fuente tiene historial o trabajo asociado y no puede eliminarse.",
+      );
+    }
+    throw error;
+  }
 }
 
 export async function createRadarCompetitor(input: unknown) {
@@ -644,13 +712,50 @@ export async function updateRadarCompetitor(id: string, input: unknown) {
 }
 
 export async function deleteRadarCompetitor(id: string) {
-  return withRadarTransaction(async (tx) => {
-    const [deleted] = await tx.delete(radarCompetitors).where(and(
-      eq(radarCompetitors.workspaceId, RADAR_WORKSPACE_ID),
-      eq(radarCompetitors.legacyId, id),
-    )).returning({ id: radarCompetitors.id });
-    return Boolean(deleted);
-  });
+  try {
+    return await withRadarTransaction(async (tx) => {
+      const [existing] = await tx
+        .select({ id: radarCompetitors.id })
+        .from(radarCompetitors)
+        .where(and(
+          eq(radarCompetitors.workspaceId, RADAR_WORKSPACE_ID),
+          eq(radarCompetitors.legacyId, id),
+        ))
+        .for("update");
+      if (!existing) return false;
+      const dependencies = await Promise.all([
+        tx.select({ id: radarSources.id }).from(radarSources).where(and(
+          eq(radarSources.workspaceId, RADAR_WORKSPACE_ID),
+          eq(radarSources.competitorId, existing.id),
+        )).limit(1),
+        tx.select({ id: radarChangeEvents.id }).from(radarChangeEvents).where(and(
+          eq(radarChangeEvents.workspaceId, RADAR_WORKSPACE_ID),
+          eq(radarChangeEvents.competitorId, existing.id),
+        )).limit(1),
+        tx.select({ id: radarAiAlerts.id }).from(radarAiAlerts).where(and(
+          eq(radarAiAlerts.workspaceId, RADAR_WORKSPACE_ID),
+          eq(radarAiAlerts.competitorId, existing.id),
+        )).limit(1),
+      ]);
+      if (dependencies.some((rows) => rows.length > 0)) {
+        throw new RadarHistoryConflictError(
+          "El competidor tiene fuentes o historial. Desvincúlalos antes de eliminarlo.",
+        );
+      }
+      const [deleted] = await tx.delete(radarCompetitors).where(and(
+        eq(radarCompetitors.workspaceId, RADAR_WORKSPACE_ID),
+        eq(radarCompetitors.legacyId, id),
+      )).returning({ id: radarCompetitors.id });
+      return Boolean(deleted);
+    });
+  } catch (error) {
+    if (isForeignKeyViolation(error)) {
+      throw new RadarHistoryConflictError(
+        "El competidor tiene historial o dependencias y no puede eliminarse.",
+      );
+    }
+    throw error;
+  }
 }
 
 export async function createRadarKeyword(input: unknown) {

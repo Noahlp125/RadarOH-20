@@ -70,6 +70,17 @@ app.use("/api/radar", async (req, res, next) => {
   await waitForReadiness();
   next();
 });
+app.use("/api/radar", (req, res, next) => {
+  const isMutation = ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
+  if (process.env.RADAR_WRITE_FREEZE === "true" && isMutation) {
+    res.setHeader("Retry-After", "60");
+    res.status(503).json({
+      error: "RadarOH está temporalmente en modo de solo lectura por mantenimiento.",
+    });
+    return;
+  }
+  next();
+});
 app.use(
   "/api",
   rateLimit({

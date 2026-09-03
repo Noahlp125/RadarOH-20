@@ -6,6 +6,7 @@ import { startRadarWorker, stopRadarWorker } from "./lib/radar/worker";
 import { createShutdownHandler } from "./lib/shutdown";
 import { setReadiness } from "./lib/observability";
 import { ensureRadarMonitoringSources } from "./lib/radar/repository";
+import { getRadarDatabaseProvider } from "@workspace/db";
 
 const rawPort = process.env["PORT"];
 
@@ -49,10 +50,21 @@ process.once("SIGINT", () => void shutdown("SIGINT"));
 
 try {
   await initializeRadarDatabaseSecurity();
-  const monitoringSources = await ensureRadarMonitoringSources();
-  logger.info(monitoringSources, "RadarOH public monitoring sources initialized");
+  if (process.env.RADAR_WRITE_FREEZE === "true") {
+    logger.info("RadarOH source bootstrap skipped during write freeze");
+  } else {
+    const monitoringSources = await ensureRadarMonitoringSources();
+    logger.info(monitoringSources, "RadarOH public monitoring sources initialized");
+  }
   setReadiness(true);
-  startRadarWorker();
+  if (process.env.RADAR_WORKER_ENABLED === "false") {
+    logger.info(
+      { databaseProvider: getRadarDatabaseProvider() },
+      "RadarOH worker disabled for maintenance",
+    );
+  } else {
+    startRadarWorker();
+  }
 } catch (error) {
   logger.error({ err: error }, "RadarOH startup initialization failed");
   await shutdown("STARTUP_FAILURE");

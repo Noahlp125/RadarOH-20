@@ -7,6 +7,7 @@ import {
   radarSources,
   radarWorkerJobs,
   radarWorkerLeases,
+  isSupabaseRadarDatabase,
   pool,
   type PoolClient,
 } from "@workspace/db";
@@ -39,7 +40,8 @@ const STALE_JOB_MS = 2 * 60_000;
 const MAX_JOBS_PER_TICK = 10;
 const MONITOR_ERROR_RETRY_MS = 15 * 60_000;
 const workerId = `${hostname()}:${process.pid}:${randomUUID()}`;
-const leaseId = `radar-worker:${RADAR_WORKSPACE_ID}`;
+const leaseKey = `radar-worker:${RADAR_WORKSPACE_ID}`;
+const leaseRowId = isSupabaseRadarDatabase() ? randomUUID() : leaseKey;
 
 type WorkerJob = typeof radarWorkerJobs.$inferSelect;
 type JobLockClient = PoolClient;
@@ -158,12 +160,12 @@ async function acquireWorkerLease(ownerId: string, now = new Date()) {
     const [before] = await tx
       .select()
       .from(radarWorkerLeases)
-      .where(eq(radarWorkerLeases.id, leaseId))
+      .where(eq(radarWorkerLeases.workspaceId, RADAR_WORKSPACE_ID))
       .limit(1);
     await tx
       .insert(radarWorkerLeases)
       .values({
-        id: leaseId,
+        id: leaseRowId,
         workspaceId: RADAR_WORKSPACE_ID,
         ownerId,
         acquiredAt: now,
@@ -171,7 +173,7 @@ async function acquireWorkerLease(ownerId: string, now = new Date()) {
         expiresAt,
         updatedAt: now,
       })
-      .onConflictDoNothing();
+      .onConflictDoNothing({ target: radarWorkerLeases.workspaceId });
     const [lease] = await tx
       .update(radarWorkerLeases)
       .set({
@@ -185,7 +187,7 @@ async function acquireWorkerLease(ownerId: string, now = new Date()) {
         updatedAt: now,
       })
       .where(and(
-        eq(radarWorkerLeases.id, leaseId),
+        eq(radarWorkerLeases.workspaceId, RADAR_WORKSPACE_ID),
         or(
           eq(radarWorkerLeases.ownerId, ownerId),
           lte(radarWorkerLeases.expiresAt, now),
@@ -212,7 +214,7 @@ async function renewWorkerLease() {
         updatedAt: now,
       })
       .where(and(
-        eq(radarWorkerLeases.id, leaseId),
+        eq(radarWorkerLeases.workspaceId, RADAR_WORKSPACE_ID),
         eq(radarWorkerLeases.ownerId, workerId),
       ))
       .returning({ id: radarWorkerLeases.id });
@@ -227,7 +229,7 @@ async function releaseWorkerLease() {
       .update(radarWorkerLeases)
       .set({ expiresAt: now, heartbeatAt: now, updatedAt: now })
       .where(and(
-        eq(radarWorkerLeases.id, leaseId),
+        eq(radarWorkerLeases.workspaceId, RADAR_WORKSPACE_ID),
         eq(radarWorkerLeases.ownerId, workerId),
       )),
   );
@@ -343,7 +345,7 @@ export const radarWorkerTestHarness = {
   releaseJobLock(client: JobLockClient, jobKey: string) {
     return releaseJobLock(client, jobKey);
   },
-  leaseId,
+  leaseId: leaseRowId,
   leaseMs: WORKER_LEASE_MS,
   staleJobMs: STALE_JOB_MS,
   status: getRadarWorkerStatus,

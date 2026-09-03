@@ -43,4 +43,19 @@ describe("operational observability", () => {
     assert.match(requestIdFromHeader("bad value\r\nx-header: injected"), /^[0-9a-f-]{36}$/);
     assert.match(requestIdFromHeader("x".repeat(129)), /^[0-9a-f-]{36}$/);
   });
+
+  it("blocks RadarOH mutations during the maintenance write freeze", async () => {
+    const previous = process.env.RADAR_WRITE_FREEZE;
+    process.env.RADAR_WRITE_FREEZE = "true";
+    try {
+      await request(app)
+        .post("/api/radar/sources")
+        .send({})
+        .expect(503)
+        .expect("Retry-After", "60");
+    } finally {
+      if (previous === undefined) delete process.env.RADAR_WRITE_FREEZE;
+      else process.env.RADAR_WRITE_FREEZE = previous;
+    }
+  });
 });

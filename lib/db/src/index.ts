@@ -14,6 +14,7 @@ export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";
+export * from "./radar-database-mode";
 export type { PoolClient } from "pg";
 
 export type RadarTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];

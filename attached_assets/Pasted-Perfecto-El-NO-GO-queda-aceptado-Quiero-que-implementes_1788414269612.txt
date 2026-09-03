@@ -1,0 +1,68 @@
+Perfecto. El NO-GO queda aceptado.
+
+Quiero que implementes ahora únicamente las correcciones necesarias para eliminar los bloqueantes detectados, pero SIN ejecutar todavía ninguna migración, sin conectar Supabase y sin copiar datos.
+
+Corrige los siguientes puntos:
+
+1. Migración desde un snapshot consistente:
+   - Utilizar REPEATABLE READ READ ONLY en la lectura de PostgreSQL de Replit.
+   - Pausar y drenar el worker antes del snapshot final.
+   - Verificar que no existan jobs, runs o análisis en estado running antes de copiar.
+
+2. Protección del destino:
+   - Iniciar la transacción de destino antes de comprobar su estado.
+   - Comprobar que TODAS las tablas Radar de Supabase estén vacías.
+   - Añadir un lock exclusivo para impedir dos migraciones simultáneas.
+
+3. Workspace:
+   - Validar explícitamente que el origen contiene exactamente el workspace esperado: oh-casas.
+   - Abortar si aparece cualquier workspace adicional.
+
+4. RLS y permisos:
+   - Separar permisos de lectura, escritura y administración.
+   - Impedir que un viewer pueda modificar, eliminar datos, modificar miembros o cambiar roles.
+   - Definir explícitamente REVOKE/GRANT.
+   - No asumir que Clerk ya está integrado con auth.jwt().
+   - Mantener la API como límite de confianza mientras Clerk siga siendo el sistema de autenticación.
+
+5. Integridad:
+   - Garantizar que las relaciones no puedan cruzar workspaces.
+   - Utilizar FKs compuestas o una solución equivalente.
+
+6. Backend:
+   - Adaptar Drizzle, repository y worker al nuevo esquema UUID.
+   - Adaptar source_runtime.
+   - Adaptar las tablas de relación de evidencias IA.
+   - Adaptar worker_leases.
+   - Mantener las respuestas de la API compatibles con el frontend actual.
+
+7. Seguridad:
+   - Adaptar o retirar initializeRadarDatabaseSecurity() para que no rompa con las nuevas tablas.
+   - Añadir los índices FK recomendados.
+   - Revisar CASCADE y utilizar RESTRICT o soft-delete donde sea apropiado para datos históricos.
+
+8. Rollback:
+   - Diseñar un rollback real para después del cutover.
+   - No asumir que simplemente volver a Replit garantiza RPO cero.
+   - Proponer write freeze o mecanismo de sincronización de deltas.
+
+9. Migración ensayada:
+   - Preparar un procedimiento de migración reproducible y validable.
+   - Mantener Replit PostgreSQL intacto.
+   - No borrar ni modificar datos de origen.
+
+IMPORTANTE:
+No ejecutes SQL.
+No conectes Supabase.
+No configures todavía las variables de Supabase.
+No hagas el cutover.
+No elimines PostgreSQL de Replit.
+
+Cuando termines las correcciones, haz una nueva auditoría de seguridad y dame un nuevo informe indicando:
+
+- GO / NO-GO
+- Bloqueantes restantes
+- Riesgos restantes
+- Archivos modificados
+- Tests ejecutados
+- Qué queda pendiente antes de migrar

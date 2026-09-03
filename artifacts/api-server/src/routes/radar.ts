@@ -37,6 +37,7 @@ import {
   deleteRadarKeyword,
   deleteRadarSource,
   importRadarPayload,
+  RadarHistoryConflictError,
   readRadarState,
   replaceRadarState,
   updateRadarCompetitor,
@@ -140,11 +141,19 @@ router.delete("/radar/sources/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  if (!(await deleteRadarSource(params.data.id))) {
-    res.status(404).json({ error: "Fuente no encontrada." });
-    return;
+  try {
+    if (!(await deleteRadarSource(params.data.id))) {
+      res.status(404).json({ error: "Fuente no encontrada." });
+      return;
+    }
+    res.sendStatus(204);
+  } catch (error) {
+    if (error instanceof RadarHistoryConflictError) {
+      res.status(409).json({ error: error.message });
+      return;
+    }
+    throw error;
   }
-  res.sendStatus(204);
 });
 
 router.post("/radar/competitors", async (req, res): Promise<void> => {
@@ -192,11 +201,19 @@ router.delete("/radar/competitors/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  if (!(await deleteRadarCompetitor(params.data.id))) {
-    res.status(404).json({ error: "Competidor no encontrado." });
-    return;
+  try {
+    if (!(await deleteRadarCompetitor(params.data.id))) {
+      res.status(404).json({ error: "Competidor no encontrado." });
+      return;
+    }
+    res.sendStatus(204);
+  } catch (error) {
+    if (error instanceof RadarHistoryConflictError) {
+      res.status(409).json({ error: error.message });
+      return;
+    }
+    throw error;
   }
-  res.sendStatus(204);
 });
 
 router.post("/radar/keywords", async (req, res): Promise<void> => {

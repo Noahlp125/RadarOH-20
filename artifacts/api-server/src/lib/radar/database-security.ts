@@ -1,4 +1,4 @@
-import { pool } from "@workspace/db";
+import { isSupabaseRadarDatabase, pool } from "@workspace/db";
 import { createHash } from "node:crypto";
 
 let radarDatabaseRole = "radar_app";
@@ -12,6 +12,30 @@ export function getRadarDatabaseRole() {
 }
 
 export async function initializeRadarDatabaseSecurity(): Promise<void> {
+  if (isSupabaseRadarDatabase()) {
+    radarDatabaseRole = "radar_backend";
+    const identity = await pool.query<{
+      current_user: string;
+      role_exists: boolean;
+      can_set_role: boolean;
+    }>(`
+      select
+        current_user,
+        to_regrole('radar_backend') is not null as role_exists,
+        case
+          when to_regrole('radar_backend') is null then false
+          else pg_has_role(current_user, 'radar_backend', 'MEMBER')
+        end as can_set_role
+    `);
+    const status = identity.rows[0];
+    if (!status?.role_exists || !status.can_set_role) {
+      throw new Error(
+        "Supabase is missing the prepared radar_backend role or role membership.",
+      );
+    }
+    return;
+  }
+
   const identity = await pool.query<{ current_user: string }>("select current_user");
   const currentUser = identity.rows[0]?.current_user;
   if (!currentUser) throw new Error("Unable to determine the PostgreSQL user");
