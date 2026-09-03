@@ -605,6 +605,8 @@ create index if not exists radar_keywords_workspace_idx
   on public.radar_keywords(workspace_id);
 create index if not exists radar_sources_workspace_idx
   on public.radar_sources(workspace_id);
+create index if not exists radar_sources_competitor_idx
+  on public.radar_sources(competitor_id);
 create index if not exists radar_plan_items_workspace_horizon_idx
   on public.radar_plan_items(workspace_id, horizon);
 create index if not exists radar_imports_workspace_created_idx
@@ -631,6 +633,8 @@ create index if not exists radar_ai_findings_workspace_created_idx
   on public.radar_ai_findings(workspace_id, created_at);
 create index if not exists radar_ai_alerts_workspace_status_idx
   on public.radar_ai_alerts(workspace_id, status, created_at);
+create index if not exists radar_ai_alerts_competitor_idx
+  on public.radar_ai_alerts(competitor_id);
 create index if not exists radar_integrations_workspace_status_idx
   on public.radar_integrations(workspace_id, status);
 create index if not exists radar_webhooks_workspace_status_idx

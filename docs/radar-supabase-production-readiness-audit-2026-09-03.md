@@ -5,11 +5,11 @@
 **NO-GO for production cutover.**
 
 The migration mechanics, runtime compatibility, isolation and rollback are
-validated. The remaining blockers are operational rather than data-integrity
-failures: the candidate staging project is on the Free plan, production
-backup/PITR and restore capability are not verified, production capacity and
-alerts are not configured, production Supabase connection secrets do not exist,
-no maintenance window is approved, and RPO/RTO have not been accepted.
+validated. RPO/RTO, restore, capacity, monitoring, runtime and cutover plans are
+now documented. Execution blockers remain: the definitive project is on the
+Free plan, backup/PITR and restore capability are not verified, production-like
+load and alerts have not been exercised, production runtime credentials do not
+exist, and no maintenance window is approved.
 
 No production configuration or data was changed during this audit.
 
@@ -29,6 +29,25 @@ No production configuration or data was changed during this audit.
 The current size is small, but the rehearsal did not replay representative
 production traffic or model evidence/history growth. A point-in-time connection
 sample is not a capacity forecast.
+
+## Definitive Supabase project
+
+- Project: `Radar-OH`
+- Ref: `pimjbwqndcrpeswstbog`
+- Region/status: `eu-central-1`, `ACTIVE_HEALTHY`
+- PostgreSQL: `17.6`, GA channel
+- Organization plan: Free
+- Database size: 10.2 MB
+- Connections observed: 6 of 60; 1 active
+- RadarOH migrations/tables/policies/roles: 0
+
+The project is empty and has not received schema or data. Security Advisor
+reports two warnings because `public.rls_auto_enable()` is a `SECURITY DEFINER`
+function executable by `anon` and `authenticated`. Resolve this before exposing
+or migrating the definitive project:
+
+- [Anonymous role can execute SECURITY DEFINER](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable)
+- [Authenticated role can execute SECURITY DEFINER](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable)
 
 ## Automated regression coverage
 
@@ -81,17 +100,20 @@ Official reference:
 
 ## Backup, restore, RPO and RTO
 
-**Blocking.**
+**Objectives and drill documented; execution blocking.**
 
 - The organization is currently on the Free plan.
 - Active PITR was not observable or proven.
 - No restore into an isolated project was executed.
-- Acceptable RPO and RTO are not defined.
+- Proposed objectives are RPO ≤15 minutes and RTO ≤2 hours, with RPO 0 during
+  the frozen pre-write cutover window.
 - Backup retention and operator access for the definitive project are not
   confirmed.
 
 Before cutover, use a production-appropriate plan and explicitly verify backup
 retention, PITR availability, restore permissions and a timed restore drill.
+
+Procedure: `docs/radar-supabase-rpo-rto-restore-plan.md`.
 
 Official references:
 
@@ -100,7 +122,7 @@ Official references:
 
 ## Capacity, monitoring and alerts
 
-**Blocking pending production-like evidence.**
+**Assessment and alerts documented; execution blocking.**
 
 - Current database utilization is low, but expected source, evidence, change
   event, analysis and delivery growth has not been projected.
@@ -113,6 +135,11 @@ Official references:
   PostgREST connection was terminated by an administrator command during
   initial project setup; the other matched entry was migration SQL text, not a
   continuing runtime error.
+- The active Replit source worker is repeatedly exhausting all three AI attempts
+  because generated output references unknown evidence IDs. Validation correctly
+  rejects unsupported findings, but the scheduler continues creating error
+  analyses and consuming capacity. This is an operational blocker independent
+  of the database migration.
 
 Required before cutover:
 
@@ -120,6 +147,9 @@ Required before cutover:
 2. Replay representative monitoring and AI traffic.
 3. Define latency and connection thresholds.
 4. Configure and verify alerts with test incidents.
+
+Detailed scenarios, thresholds and runtime plan:
+`docs/radar-supabase-capacity-monitoring-runtime-plan.md`.
 
 ## FK/index warning review
 
@@ -130,19 +160,17 @@ The 21 warnings are not 21 independent missing indexes. They include simple and
 tenant-composite FKs on the same relationship. Existing PKs and indexes already
 cover many application predicates by globally unique IDs or tenant/ID pairs.
 
-### Recommended for the next staging migration
+### Staging benchmark decision
 
-These three indexes have direct value in current code paths and parent-FK
-checks:
+| Candidate | Representative result | Decision |
+|---|---|---|
+| `radar_sources (competitor_id)` | 200k rows: 28.262 ms seq → 0.060 ms index | keep in staging/schema |
+| `radar_ai_alerts (competitor_id)` | 500k rows: 67.246 ms seq → 0.131 ms index | keep in staging/schema |
+| `radar_monitor_evidence (run_id)` | 1M rows: existing index 0.042 ms; duplicate 0.041 ms | reject duplicate |
 
-| Candidate | Reason |
-|---|---|
-| `radar_sources (competitor_id)` | Competitor cleanup and `ON DELETE SET NULL` lookup |
-| `radar_ai_alerts (competitor_id)` | Competitor alert cleanup and `ON DELETE SET NULL` lookup |
-| `radar_monitor_evidence (run_id)` | Run/evidence integrity and future run-detail/history lookup |
-
-Apply and benchmark them in staging, then rerun the Advisor. Do not apply DDL
-directly to production.
+`radar_monitor_evidence(run_id, item_key)` already covers `run_id`. The
+duplicate simulated ~9 MB per million rows without meaningful gain. No index
+was applied to the definitive project.
 
 ### Already usefully covered or low priority
 
@@ -182,17 +210,51 @@ Before a real cutover, approve and record:
 - reverse-delta procedure if rollback is required after Supabase accepts writes;
 - RPO/RTO and restore escalation path.
 
+Detailed procedure:
+`docs/radar-supabase-production-cutover-runbook.md`.
+
+## Rehearsal against the definitive project
+
+**Not executed under the read-only production boundary.**
+
+The definitive project is empty. Repeating the rehearsal there would require
+applying schema, copying a snapshot, creating a restricted runtime login and
+temporarily supplying connection credentials. Those are production-affecting
+actions and require explicit approval.
+
+The safe next step is either:
+
+1. a Supabase branch/restore isolated from the definitive project; or
+2. a formally approved pre-production load into the definitive project while it
+   remains disconnected from the active application.
+
+Both options may have provider cost and require a separate approval.
+
+## Completed readiness work
+
+- Proposed RPO/RTO and timed restore-drill procedure.
+- Current-dataset capacity formulas and 20/100/1,000-source scenarios.
+- Required representative API/worker/AI load suite.
+- Supabase/API/worker alert matrix and verification methods.
+- Staging benchmark of all three index candidates; two retained, one rejected.
+- Production runtime login and Session Pooler configuration plan.
+- Detailed cutover gates, responsibilities, smoke tests and rollback procedure.
+- Read-only audit of the definitive Supabase project.
+
 ## Remaining blockers
 
-1. Production-grade backup/PITR and a successful timed restore drill.
-2. Accepted RPO/RTO.
-3. Production capacity forecast and representative load test.
-4. Database, worker and API alerts configured and exercised.
-5. Review/apply/benchmark the three recommended FK indexes in staging.
-6. Production Session pooler secret and restricted runtime login, created only
+1. Upgrade/approve a production-capable Supabase plan.
+2. Verify backup/PITR and complete the timed restore drill.
+3. Accept the proposed RPO ≤15 min / RTO ≤2 h.
+4. Run the documented representative load scenarios.
+5. Configure and exercise database, API and worker alerts.
+6. Resolve the two `rls_auto_enable()` security warnings.
+7. Production Session pooler secret and restricted runtime login, created only
    when cutover preparation is explicitly authorized.
-7. Approved maintenance window and named cutover/rollback operators.
-8. Final frozen snapshot and automated rehearsal against the definitive
+8. Approved maintenance window and named cutover/rollback operators.
+9. Final frozen snapshot and automated rehearsal against the definitive
    Supabase project.
+10. Stabilize or explicitly pause the repeatedly failing scheduled AI analysis
+    job, then verify a successful analysis and its alert.
 
-Until all eight are closed, the production recommendation remains **NO-GO**.
+Until all ten are closed, the production recommendation remains **NO-GO**.
