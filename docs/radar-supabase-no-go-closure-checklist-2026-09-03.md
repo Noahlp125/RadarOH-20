@@ -15,6 +15,9 @@ Estados permitidos: `PENDIENTE`, `EN CURSO`, `BLOQUEADO`, `COMPLETO`.
 Cada evidencia debe guardar fecha/hora UTC, proyecto/ref, operador y enlace al
 log o informe, sin incluir secretos.
 
+Evidencia de la verificación actual:
+`docs/radar-supabase-gate-evidence-2026-09-03.md`.
+
 ## Prioridad y dependencias
 
 - **P0 — recuperación/seguridad:** no se puede aceptar una carga productiva sin
@@ -39,9 +42,9 @@ P2-1 definitive rehearsal → P2-2 window/operators
 
 ## P0-1 — Plan y capacidad de backup de Supabase
 
-**Estado:** PENDIENTE. La organización está en plan Free; el proyecto
-definitivo está vacío y sano, pero no ofrece evidencia suficiente de backup/PITR
-productivo.
+**Estado:** BLOQUEADO. Verificación read-only completa: la organización sigue en
+plan Free y el proyecto definitivo está vacío y sano, pero no ofrece evidencia
+suficiente de backup/PITR productivo. No se consultó precio ni inició upgrade.
 
 1. **Acción exacta**
    - Confirmar con el owner de la organización el plan productivo requerido.
@@ -72,8 +75,9 @@ productivo.
 
 ## P0-2 — Aceptación formal de RPO/RTO
 
-**Estado:** PENDIENTE. La propuesta es RPO ≤15 minutos, RTO ≤2 horas y RPO 0
-durante el freeze previo a la primera escritura Supabase.
+**Estado:** BLOQUEADO. La propuesta técnica está completa; falta aceptación
+formal de RPO ≤15 minutos, RTO ≤2 horas y RPO 0 durante el freeze previo a la
+primera escritura Supabase.
 
 1. **Acción exacta**
    - Revisar `docs/radar-supabase-rpo-rto-restore-plan.md`.
@@ -130,8 +134,9 @@ durante el freeze previo a la primera escritura Supabase.
 
 ## P0-4 — Eliminar los warnings de seguridad
 
-**Estado:** PENDIENTE. El definitivo reporta dos warnings sobre
-`public.rls_auto_enable()` ejecutable por `anon` y `authenticated`.
+**Estado:** BLOQUEADO. Staging está limpio y la migración de hardening está
+probada. El definitivo mantiene dos warnings sobre `public.rls_auto_enable()`
+ejecutable por `anon` y `authenticated` y no fue modificado.
 
 1. **Acción exacta**
    - Reproducir el warning en un entorno aislado.
@@ -162,9 +167,9 @@ durante el freeze previo a la primera escritura Supabase.
 
 ## P1-1 — Estabilizar el job de IA
 
-**Estado:** PENDIENTE. El worker Replit está agotando tres intentos porque la
-salida IA referencia IDs de evidencia desconocidos. La validación funciona, pero
-el scheduler sigue creando análisis en error.
+**Estado:** BLOQUEADO. La remediación pasa 33/33 tests y tres análisis staging
+consecutivos en un intento y cero errores. Falta deploy/observación productiva
+autorizada; el worker Replit activo sigue ejecutando el código anterior.
 
 1. **Acción exacta**
    - Reproducir con fixtures de evidencia conocidos en staging.

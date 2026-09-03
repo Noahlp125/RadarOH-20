@@ -151,6 +151,60 @@ export function validateAiOutputReferences(
   return result;
 }
 
+/**
+ * Models occasionally copy a valid change_event_id into an evidence_ids field
+ * even when the prompt distinguishes both identifiers. Resolve only that
+ * unambiguous, persisted relationship. Truly unknown identifiers remain
+ * unchanged and are rejected by validateAiOutputReferences.
+ */
+export function normalizeAiOutputEvidenceReferences(
+  result: AiOutput,
+  evidence: AiEvidenceReference[],
+): AiOutput {
+  const evidenceIdByEventId = new Map(
+    evidence.map((item) => [item.change_event_id, item.evidence_id]),
+  );
+  const eventIdByEvidenceId = new Map(
+    evidence.map((item) => [item.evidence_id, item.change_event_id]),
+  );
+  const allowedEventIds = new Set(evidence.map((item) => item.change_event_id));
+  const normalizeIds = (ids: string[]) =>
+    ids.map((id) => evidenceIdByEventId.get(id) ?? id);
+  const normalizeFinding = (finding: AiOutput["findings"][number]) => {
+    const evidenceIds = normalizeIds(finding.evidence_ids);
+    const citedEventIds = new Set(
+      evidenceIds
+        .map((id) => eventIdByEvidenceId.get(id))
+        .filter((id): id is string => Boolean(id)),
+    );
+    const changeEventId = allowedEventIds.has(finding.change_event_id)
+      ? finding.change_event_id
+      : citedEventIds.size === 1
+        ? [...citedEventIds][0]!
+        : finding.change_event_id;
+
+    return {
+      ...finding,
+      change_event_id: changeEventId,
+      evidence_ids: evidenceIds,
+      suggested_updates: finding.suggested_updates.map((update) => ({
+        ...update,
+        evidence_ids: normalizeIds(update.evidence_ids),
+      })),
+    };
+  };
+
+  return {
+    ...result,
+    summary_evidence_ids: normalizeIds(result.summary_evidence_ids),
+    trends: result.trends.map((trend) => ({
+      ...trend,
+      evidence_ids: normalizeIds(trend.evidence_ids),
+    })),
+    findings: result.findings.map(normalizeFinding),
+  };
+}
+
 export function parseAndValidateAiOutput(
   content: string,
   evidence: AiEvidenceReference[],
@@ -171,7 +225,10 @@ export function parseAndValidateAiOutput(
       }),
     );
   }
-  return validateAiOutputReferences(parsed.data, evidence);
+  return validateAiOutputReferences(
+    normalizeAiOutputEvidenceReferences(parsed.data, evidence),
+    evidence,
+  );
 }
 
 function sanitizeAttemptError(error: unknown): string {

@@ -63,8 +63,16 @@ describe("RadarOH AI output validation", () => {
     );
   });
 
-  it("rejects a response containing an invented event ID", () => {
-    assertRejected(output({ findings: [finding({ change_event_id: "invented-event" })] }), "change_event_id");
+  it("rejects an invented event ID when cited evidence does not identify one exact event", () => {
+    assertRejected(
+      output({
+        findings: [finding({
+          change_event_id: "invented-event",
+          evidence_ids: ["evidence-1", "evidence-2"],
+        })],
+      }),
+      "change_event_id",
+    );
   });
 
   it("rejects a response containing an invented evidence ID", () => {
@@ -116,7 +124,10 @@ describe("RadarOH AI output validation", () => {
       output({
         findings: [
           finding(),
-          finding({ change_event_id: "invented-event" }),
+          finding({
+            change_event_id: "invented-event",
+            evidence_ids: ["evidence-1", "evidence-2"],
+          }),
         ],
       }),
       "change_event_id",
@@ -127,6 +138,63 @@ describe("RadarOH AI output validation", () => {
     const result = parseAndValidateAiOutput(JSON.stringify(output()), evidence);
     assert.equal(result.findings[0]?.change_event_id, "event-1");
     assert.deepEqual(result.findings[0]?.evidence_ids, ["evidence-1"]);
+  });
+
+  it("maps known change event IDs to their exact persisted evidence IDs", () => {
+    const result = parseAndValidateAiOutput(
+      JSON.stringify(output({
+        summary_evidence_ids: ["event-1"],
+        trends: [{
+          name: "Precios",
+          direction: "growing",
+          description: "Suben.",
+          confidence: 80,
+          evidence_ids: ["event-1"],
+        }],
+        findings: [finding({
+          evidence_ids: ["event-1"],
+          suggested_updates: [{
+            competitor_id: "competitor-1",
+            field: "notas",
+            value: "Dato explícito",
+            evidence_ids: ["event-1"],
+          }],
+        })],
+      })),
+      evidence,
+    );
+
+    assert.deepEqual(result.summary_evidence_ids, ["evidence-1"]);
+    assert.deepEqual(result.trends[0]?.evidence_ids, ["evidence-1"]);
+    assert.deepEqual(result.findings[0]?.evidence_ids, ["evidence-1"]);
+    assert.deepEqual(
+      result.findings[0]?.suggested_updates[0]?.evidence_ids,
+      ["evidence-1"],
+    );
+  });
+
+  it("maps an unknown finding event only when cited evidence identifies one exact event", () => {
+    const result = parseAndValidateAiOutput(
+      JSON.stringify(output({
+        findings: [finding({ change_event_id: "invented-event" })],
+      })),
+      evidence,
+    );
+
+    assert.equal(result.findings[0]?.change_event_id, "event-1");
+    assert.deepEqual(result.findings[0]?.evidence_ids, ["evidence-1"]);
+  });
+
+  it("still rejects an unknown finding event when cited evidence is ambiguous", () => {
+    assertRejected(
+      output({
+        findings: [finding({
+          change_event_id: "invented-event",
+          evidence_ids: ["evidence-1", "evidence-2"],
+        })],
+      }),
+      "change_event_id",
+    );
   });
 
   it("normalizes explicit text booleans and preserves descriptive suggested fields", () => {

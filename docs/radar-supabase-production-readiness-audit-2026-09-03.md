@@ -261,3 +261,11 @@ Both options may have provider cost and require a separate approval.
     job, then verify a successful analysis and its alert.
 
 Until all ten are closed, the production recommendation remains **NO-GO**.
+
+## Post-audit gate evidence
+
+Read-only P0 verification and staging-only P0-4/P1-1 remediation evidence:
+`docs/radar-supabase-gate-evidence-2026-09-03.md`.
+
+The production recommendation remains **NO-GO**. No production plan,
+configuration, schema, data, secret, freeze or runtime was changed.

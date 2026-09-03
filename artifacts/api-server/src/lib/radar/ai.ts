@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, notExists } from "drizzle-orm";
 import {
   radarAiAlerts,
   radarAiAnalyses,
@@ -227,26 +227,25 @@ async function loadUnanalyzedEvidence(limit: number, sourceLegacyId?: string) {
     const events = await tx
       .select()
       .from(radarChangeEvents)
-      .where(selectedSource
-        ? and(
-            eq(radarChangeEvents.workspaceId, RADAR_WORKSPACE_ID),
-            eq(radarChangeEvents.sourceId, selectedSource.id),
-          )
-        : eq(radarChangeEvents.workspaceId, RADAR_WORKSPACE_ID))
+      .where(and(
+        selectedSource
+          ? and(
+              eq(radarChangeEvents.workspaceId, RADAR_WORKSPACE_ID),
+              eq(radarChangeEvents.sourceId, selectedSource.id),
+            )
+          : eq(radarChangeEvents.workspaceId, RADAR_WORKSPACE_ID),
+        notExists(
+          tx
+            .select({ id: radarAiFindings.id })
+            .from(radarAiFindings)
+            .where(and(
+              eq(radarAiFindings.workspaceId, RADAR_WORKSPACE_ID),
+              eq(radarAiFindings.changeEventId, radarChangeEvents.id),
+            )),
+        ),
+      ))
       .orderBy(desc(radarChangeEvents.occurredAt))
-      .limit(safeLimit * 2);
-    const eventIds = events.map((event) => event.id);
-    const existing = eventIds.length
-      ? await tx
-          .select({ changeEventId: radarAiFindings.changeEventId })
-          .from(radarAiFindings)
-          .where(and(
-            eq(radarAiFindings.workspaceId, RADAR_WORKSPACE_ID),
-            inArray(radarAiFindings.changeEventId, eventIds),
-          ))
-      : [];
-    const analyzed = new Set(existing.map((row) => row.changeEventId).filter(Boolean));
-    const pending = events.filter((event) => !analyzed.has(event.id)).slice(0, safeLimit);
+      .limit(safeLimit);
     const competitors = await tx
       .select()
       .from(radarCompetitors)
@@ -254,7 +253,7 @@ async function loadUnanalyzedEvidence(limit: number, sourceLegacyId?: string) {
     const sourceMap = new Map(sources.map((source) => [source.id, source]));
     const competitorMap = new Map(competitors.map((competitor) => [competitor.id, competitor]));
     const output = [];
-    for (const event of pending) {
+    for (const event of events) {
       const [evidence] = await tx
         .select()
         .from(radarMonitorEvidence)
@@ -312,6 +311,7 @@ async function requestAnalysis(evidence: Awaited<ReturnType<typeof loadUnanalyze
                "Para field usa preferentemente uno de: ubicacion, especialidad, rango_precio, web, redes, fortalezas, debilidades, notas.",
                "alert debe ser un booleano JSON real: true o false, nunca texto.",
                "change_event_id solo puede ser un change_event_id exacto del input; evidence_ids solo puede contener evidence_id exactos del input.",
+              "IMPORTANTE: un change_event_id NUNCA es un evidence_id. Copia para evidence_ids únicamente el valor del campo evidence_id asociado en el input.",
             ].join("\n"),
           },
           {
